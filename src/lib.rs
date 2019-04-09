@@ -8,5 +8,6 @@
 
 pub use k210_pac as pac;
 
+pub mod clock;
 pub mod stdout;
 pub mod time;
