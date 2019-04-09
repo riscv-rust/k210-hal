@@ -1,0 +1,15 @@
+[package]
+name = "k210-hal"
+version = "0.1.0"
+authors = ["The RISC-V Team <risc-v@teams.rust-embedded.org>"]
+categories = ["embedded", "hardware-support", "no-std"]
+description = "HAL for K210 SoC"
+keywords = ["riscv", "k210", "hal"]
+edition = "2018"
+
+[dependencies]
+embedded-hal = { version = "0.2.1", features = ["unproven"] }
+nb = "0.1.1"
+riscv-rt = "0.5.0"
+k210-pac = { version = "0.1.0", features = ["rt"] }
+void = { version = "1.0.2", default-features = false }
