@@ -10,6 +10,5 @@ edition = "2018"
 [dependencies]
 embedded-hal = { version = "0.2.1", features = ["unproven"] }
 nb = "0.1.1"
-riscv-rt = "0.5.0"
 k210-pac = { version = "0.1.0", features = ["rt"] }
 void = { version = "1.0.2", default-features = false }
