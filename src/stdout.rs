@@ -20,8 +20,8 @@ impl<'p, T> Write for Stdout<'p, T>
                 return Err(::core::fmt::Error);
             }
 
-            if *byte == '\n' as u8 {
-                let res = block!(self.0.write('\r' as u8));
+            if *byte == b'\n' {
+                let res = block!(self.0.write(b'\r'));
 
                 if res.is_err() {
                     return Err(::core::fmt::Error);
