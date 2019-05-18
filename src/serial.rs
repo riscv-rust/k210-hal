@@ -33,19 +33,10 @@ impl SerialExt for UARTHS {
 }
 
 /// Trait to be able to generalize over UART1/UART2/UART3
-pub trait UartX: Deref<Target = uart1::RegisterBlock> {
-    /// Return pointer to register block
-    fn ptr() -> *const uart1::RegisterBlock;
-}
-impl UartX for UART1 {
-    fn ptr() -> *const uart1::RegisterBlock { UART1::ptr() }
-}
-impl UartX for UART2 {
-    fn ptr() -> *const uart1::RegisterBlock { UART2::ptr() }
-}
-impl UartX for UART3 {
-    fn ptr() -> *const uart1::RegisterBlock { UART3::ptr() }
-}
+pub trait UartX: Deref<Target = uart1::RegisterBlock> { }
+impl UartX for UART1 { }
+impl UartX for UART2 { }
+impl UartX for UART3 { }
 
 impl<UART: UartX> SerialExt for UART {
     fn constrain(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UART> {
