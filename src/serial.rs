@@ -6,7 +6,7 @@
 //! * [`UART2`](crate::pac::UART2)
 //! * [`UART3`](crate::pac::UART3)
 
-use core::marker::PhantomData;
+use core::mem;
 use core::ops::Deref;
 
 use embedded_hal::serial;
@@ -65,7 +65,7 @@ pub struct Rx<UART> {
 
 /// Serial transmitter
 pub struct Tx<UART> {
-    _uart: PhantomData<UART>,
+    uart: UART,
 }
 
 impl<UART> Rx<UART> {
@@ -82,7 +82,7 @@ impl<UART> Serial<UART> {
     pub fn split(self) -> (Tx<UART>, Rx<UART>) {
         (
             Tx {
-                _uart: PhantomData
+                uart: unsafe { mem::zeroed() }
             },
             Rx {
                 uart: self.uart
@@ -129,8 +129,7 @@ impl serial::Read<u8> for Rx<UARTHS> {
     type Error = Void;
 
     fn read(&mut self) -> nb::Result<u8, Void> {
-        // NOTE(unsafe) atomic read with no side effects
-        let rxdata = unsafe { (*UARTHS::ptr()).rxdata.read() };
+        let rxdata = self.uart.rxdata.read();
 
         if rxdata.empty().bit_is_set() {
             Err(::nb::Error::WouldBlock)
@@ -144,8 +143,7 @@ impl serial::Write<u8> for Tx<UARTHS> {
     type Error = Void;
 
     fn write(&mut self, byte: u8) -> nb::Result<(), Void> {
-        // NOTE(unsafe) atomic read with no side effects
-        let txdata = unsafe { (*UARTHS::ptr()).txdata.read() };
+        let txdata = self.uart.txdata.read();
 
         if txdata.full().bit_is_set() {
             Err(::nb::Error::WouldBlock)
@@ -158,8 +156,7 @@ impl serial::Write<u8> for Tx<UARTHS> {
     }
 
     fn flush(&mut self) -> nb::Result<(), Void> {
-        // NOTE(unsafe) atomic read with no side effects
-        let txdata = unsafe { (*UARTHS::ptr()).txdata.read() };
+        let txdata = self.uart.txdata.read();
 
         if txdata.full().bit_is_set() {
             Err(nb::Error::WouldBlock)
@@ -214,13 +211,12 @@ impl<UART: UartX> serial::Read<u8> for Rx<UART> {
     type Error = Void;
 
     fn read(&mut self) -> nb::Result<u8, Void> {
-        // NOTE(unsafe) atomic read with no side effects
-        let lsr = unsafe { (*UART::ptr()).lsr.read() };
+        let lsr = self.uart.lsr.read();
 
         if (lsr.bits() & (1<<0)) == 0 { // Data Ready bit
             Err(::nb::Error::WouldBlock)
         } else {
-            let rbr = unsafe { (*UART::ptr()).rbr_dll_thr.read() };
+            let rbr = self.uart.rbr_dll_thr.read();
             Ok((rbr.bits() & 0xff) as u8)
         }
     }
@@ -230,14 +226,13 @@ impl<UART: UartX> serial::Write<u8> for Tx<UART> {
     type Error = Void;
 
     fn write(&mut self, byte: u8) -> nb::Result<(), Void> {
-        // NOTE(unsafe) atomic read with no side effects
-        let lsr = unsafe { (*UART::ptr()).lsr.read() };
+        let lsr = self.uart.lsr.read();
 
         if (lsr.bits() & (1<<5)) != 0 { // Transmit Holding Register Empty bit
             Err(::nb::Error::WouldBlock)
         } else {
             unsafe {
-                (*UART::ptr()).rbr_dll_thr.write(|w| w.bits(byte.into()));
+                self.uart.rbr_dll_thr.write(|w| w.bits(byte.into()));
             }
             Ok(())
         }
