@@ -9,6 +9,7 @@ use crate::time::Hertz;
 #[derive(Clone, Copy)]
 pub struct Clocks {
     cpu: Hertz,
+    apb0: Hertz,
 }
 
 impl Clocks {
@@ -24,12 +25,18 @@ impl Clocks {
         cpu_freq: 390000000
 */
         Self {
-            cpu: Hertz(403_000_000)
+            cpu: Hertz(403_000_000),
+            apb0: Hertz(195_000_000),
         }
     }
 
     /// Returns CPU frequency
     pub fn cpu(&self) -> Hertz {
         Hertz(self.cpu.0)
+    }
+
+    /// Returns APB0 frequency
+    pub fn apb0(&self) -> Hertz {
+        self.apb0
     }
 }
