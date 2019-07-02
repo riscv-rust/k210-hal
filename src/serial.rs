@@ -49,7 +49,7 @@ impl<UART, PINS> Serial<UART, PINS> {
 
     /// Forms `Serial` abstraction from a transmitter and a
     /// receiver half
-    pub fn join(self, tx: Tx<UART, PINS>, _rx: Rx<UART, PINS>) -> Self {
+    pub fn join(tx: Tx<UART, PINS>, _rx: Rx<UART, PINS>) -> Self {
         Serial { uart: tx.uart, pins: tx.pins }
     }
 
