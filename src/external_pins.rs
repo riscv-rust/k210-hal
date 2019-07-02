@@ -49,58 +49,61 @@ pub struct ExternalPin45(PhantomData<*const ()>);
 pub struct ExternalPin46(PhantomData<*const ()>);
 pub struct ExternalPin47(PhantomData<*const ()>);
 
-pub(crate) trait PinIndex {
-    const INDEX: usize;
+mod closed_trait {
+    pub trait ExternalPin {
+        const INDEX: usize;
+    }
 }
+pub(crate) use closed_trait::ExternalPin;
 
-impl PinIndex for ExternalPin0 { const INDEX: usize = 0; }
-impl PinIndex for ExternalPin1 { const INDEX: usize = 1; }
-impl PinIndex for ExternalPin2 { const INDEX: usize = 2; }
-impl PinIndex for ExternalPin3 { const INDEX: usize = 3; }
-impl PinIndex for ExternalPin4 { const INDEX: usize = 4; }
-impl PinIndex for ExternalPin5 { const INDEX: usize = 5; }
-impl PinIndex for ExternalPin6 { const INDEX: usize = 6; }
-impl PinIndex for ExternalPin7 { const INDEX: usize = 7; }
-impl PinIndex for ExternalPin8 { const INDEX: usize = 8; }
-impl PinIndex for ExternalPin9 { const INDEX: usize = 9; }
-impl PinIndex for ExternalPin10 { const INDEX: usize = 10; }
-impl PinIndex for ExternalPin11 { const INDEX: usize = 11; }
-impl PinIndex for ExternalPin12 { const INDEX: usize = 12; }
-impl PinIndex for ExternalPin13 { const INDEX: usize = 13; }
-impl PinIndex for ExternalPin14 { const INDEX: usize = 14; }
-impl PinIndex for ExternalPin15 { const INDEX: usize = 15; }
-impl PinIndex for ExternalPin16 { const INDEX: usize = 16; }
-impl PinIndex for ExternalPin17 { const INDEX: usize = 17; }
-impl PinIndex for ExternalPin18 { const INDEX: usize = 18; }
-impl PinIndex for ExternalPin19 { const INDEX: usize = 19; }
-impl PinIndex for ExternalPin20 { const INDEX: usize = 20; }
-impl PinIndex for ExternalPin21 { const INDEX: usize = 21; }
-impl PinIndex for ExternalPin22 { const INDEX: usize = 22; }
-impl PinIndex for ExternalPin23 { const INDEX: usize = 23; }
-impl PinIndex for ExternalPin24 { const INDEX: usize = 24; }
-impl PinIndex for ExternalPin25 { const INDEX: usize = 25; }
-impl PinIndex for ExternalPin26 { const INDEX: usize = 26; }
-impl PinIndex for ExternalPin27 { const INDEX: usize = 27; }
-impl PinIndex for ExternalPin28 { const INDEX: usize = 28; }
-impl PinIndex for ExternalPin29 { const INDEX: usize = 29; }
-impl PinIndex for ExternalPin30 { const INDEX: usize = 30; }
-impl PinIndex for ExternalPin31 { const INDEX: usize = 31; }
-impl PinIndex for ExternalPin32 { const INDEX: usize = 32; }
-impl PinIndex for ExternalPin33 { const INDEX: usize = 33; }
-impl PinIndex for ExternalPin34 { const INDEX: usize = 34; }
-impl PinIndex for ExternalPin35 { const INDEX: usize = 35; }
-impl PinIndex for ExternalPin36 { const INDEX: usize = 36; }
-impl PinIndex for ExternalPin37 { const INDEX: usize = 37; }
-impl PinIndex for ExternalPin38 { const INDEX: usize = 38; }
-impl PinIndex for ExternalPin39 { const INDEX: usize = 39; }
-impl PinIndex for ExternalPin40 { const INDEX: usize = 40; }
-impl PinIndex for ExternalPin41 { const INDEX: usize = 41; }
-impl PinIndex for ExternalPin42 { const INDEX: usize = 42; }
-impl PinIndex for ExternalPin43 { const INDEX: usize = 43; }
-impl PinIndex for ExternalPin44 { const INDEX: usize = 44; }
-impl PinIndex for ExternalPin45 { const INDEX: usize = 45; }
-impl PinIndex for ExternalPin46 { const INDEX: usize = 46; }
-impl PinIndex for ExternalPin47 { const INDEX: usize = 47; }
+impl ExternalPin for ExternalPin0 { const INDEX: usize = 0; }
+impl ExternalPin for ExternalPin1 { const INDEX: usize = 1; }
+impl ExternalPin for ExternalPin2 { const INDEX: usize = 2; }
+impl ExternalPin for ExternalPin3 { const INDEX: usize = 3; }
+impl ExternalPin for ExternalPin4 { const INDEX: usize = 4; }
+impl ExternalPin for ExternalPin5 { const INDEX: usize = 5; }
+impl ExternalPin for ExternalPin6 { const INDEX: usize = 6; }
+impl ExternalPin for ExternalPin7 { const INDEX: usize = 7; }
+impl ExternalPin for ExternalPin8 { const INDEX: usize = 8; }
+impl ExternalPin for ExternalPin9 { const INDEX: usize = 9; }
+impl ExternalPin for ExternalPin10 { const INDEX: usize = 10; }
+impl ExternalPin for ExternalPin11 { const INDEX: usize = 11; }
+impl ExternalPin for ExternalPin12 { const INDEX: usize = 12; }
+impl ExternalPin for ExternalPin13 { const INDEX: usize = 13; }
+impl ExternalPin for ExternalPin14 { const INDEX: usize = 14; }
+impl ExternalPin for ExternalPin15 { const INDEX: usize = 15; }
+impl ExternalPin for ExternalPin16 { const INDEX: usize = 16; }
+impl ExternalPin for ExternalPin17 { const INDEX: usize = 17; }
+impl ExternalPin for ExternalPin18 { const INDEX: usize = 18; }
+impl ExternalPin for ExternalPin19 { const INDEX: usize = 19; }
+impl ExternalPin for ExternalPin20 { const INDEX: usize = 20; }
+impl ExternalPin for ExternalPin21 { const INDEX: usize = 21; }
+impl ExternalPin for ExternalPin22 { const INDEX: usize = 22; }
+impl ExternalPin for ExternalPin23 { const INDEX: usize = 23; }
+impl ExternalPin for ExternalPin24 { const INDEX: usize = 24; }
+impl ExternalPin for ExternalPin25 { const INDEX: usize = 25; }
+impl ExternalPin for ExternalPin26 { const INDEX: usize = 26; }
+impl ExternalPin for ExternalPin27 { const INDEX: usize = 27; }
+impl ExternalPin for ExternalPin28 { const INDEX: usize = 28; }
+impl ExternalPin for ExternalPin29 { const INDEX: usize = 29; }
+impl ExternalPin for ExternalPin30 { const INDEX: usize = 30; }
+impl ExternalPin for ExternalPin31 { const INDEX: usize = 31; }
+impl ExternalPin for ExternalPin32 { const INDEX: usize = 32; }
+impl ExternalPin for ExternalPin33 { const INDEX: usize = 33; }
+impl ExternalPin for ExternalPin34 { const INDEX: usize = 34; }
+impl ExternalPin for ExternalPin35 { const INDEX: usize = 35; }
+impl ExternalPin for ExternalPin36 { const INDEX: usize = 36; }
+impl ExternalPin for ExternalPin37 { const INDEX: usize = 37; }
+impl ExternalPin for ExternalPin38 { const INDEX: usize = 38; }
+impl ExternalPin for ExternalPin39 { const INDEX: usize = 39; }
+impl ExternalPin for ExternalPin40 { const INDEX: usize = 40; }
+impl ExternalPin for ExternalPin41 { const INDEX: usize = 41; }
+impl ExternalPin for ExternalPin42 { const INDEX: usize = 42; }
+impl ExternalPin for ExternalPin43 { const INDEX: usize = 43; }
+impl ExternalPin for ExternalPin44 { const INDEX: usize = 44; }
+impl ExternalPin for ExternalPin45 { const INDEX: usize = 45; }
+impl ExternalPin for ExternalPin46 { const INDEX: usize = 46; }
+impl ExternalPin for ExternalPin47 { const INDEX: usize = 47; }
 
 
 pub struct ExternalPins {
