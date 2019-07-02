@@ -7,7 +7,6 @@
 //! * [`UART3`](crate::pac::UART3)
 
 use core::mem;
-use core::ops::Deref;
 use core::convert::Infallible;
 
 use embedded_hal::serial;
@@ -15,59 +14,70 @@ use embedded_hal::serial;
 use crate::pac::{UARTHS,uart1,UART1,UART2,UART3};
 use crate::clock::Clocks;
 use crate::time::Bps;
+use core::marker::PhantomData;
+use crate::external_pins::ExternalPin;
+use crate::fpioa;
 
 
 /// Extension trait that constrains UART peripherals
-pub trait SerialExt: Sized {
+pub trait SerialExt<PINS>: Sized {
     /// Configures a UART peripheral to provide serial communication
-    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<Self>;
+    fn configure(self, pins: PINS, baud_rate: Bps, clocks: &Clocks) -> Serial<Self, PINS>;
 }
 
 /// Serial abstraction
-pub struct Serial<UART> {
+pub struct Serial<UART, PINS> {
     uart: UART,
+    pins: PINS,
 }
 
-impl<UART> Serial<UART> {
+impl<UART, PINS> Serial<UART, PINS> {
     /// Splits the `Serial` abstraction into a transmitter and a
     /// receiver half
-    pub fn split(self) -> (Tx<UART>, Rx<UART>) {
+    pub fn split(self) -> (Tx<UART, PINS>, Rx<UART, PINS>) {
         (
             Tx {
-                uart: unsafe { mem::zeroed() }
+                uart: self.uart,
+                pins: self.pins
             },
             Rx {
-                uart: self.uart
+                uart: unsafe { mem::zeroed() },
+                _pins: PhantomData,
             }
         )
     }
 
     /// Forms `Serial` abstraction from a transmitter and a
     /// receiver half
-    pub fn join(self, tx: Tx<UART>, _rx: Rx<UART>) -> Self {
-        Serial { uart: tx.uart }
+    pub fn join(self, tx: Tx<UART, PINS>, _rx: Rx<UART, PINS>) -> Self {
+        Serial { uart: tx.uart, pins: tx.pins }
     }
 
     /// Releases the UART peripheral
-    pub fn free(self) -> UART {
-        self.uart
+    pub fn free(self) -> (UART, PINS) {
+        (self.uart, self.pins)
     }
 }
 
-/// Serial receiver
-pub struct Rx<UART> {
-    uart: UART,
-}
-
 /// Serial transmitter
-pub struct Tx<UART> {
+pub struct Tx<UART, PINS> {
     uart: UART,
+    pins: PINS,
+}
+
+/// Serial receiver
+pub struct Rx<UART, PINS> {
+    uart: UART,
+    _pins: PhantomData<PINS>,
 }
 
 
-impl SerialExt for UARTHS {
-    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UARTHS> {
+impl<TX: ExternalPin, RX: ExternalPin> SerialExt<(TX, RX)> for UARTHS {
+    fn configure(self, pins: (TX, RX), baud_rate: Bps, clocks: &Clocks) -> Serial<UARTHS, (TX, RX)>
+    {
         let uart = self;
+        fpioa::set_function(TX::INDEX, fpioa::Function::UARTHS_TX);
+        fpioa::set_function(RX::INDEX, fpioa::Function::UARTHS_RX);
 
         let div = clocks.cpu().0 / baud_rate.0 - 1;
         unsafe {
@@ -77,11 +87,11 @@ impl SerialExt for UARTHS {
         uart.txctrl.write(|w| w.txen().bit(true));
         uart.rxctrl.write(|w| w.rxen().bit(true));
 
-        Serial { uart }
+        Serial { uart, pins }
     }
 }
 
-impl Serial<UARTHS> {
+impl<PINS> Serial<UARTHS, PINS> {
     /// Starts listening for an interrupt event
     pub fn listen(self) -> Self {
         self.uart.ie.write(|w| w.txwm().bit(false).rxwm().bit(true));
@@ -97,7 +107,7 @@ impl Serial<UARTHS> {
     }
 }
 
-impl serial::Read<u8> for Rx<UARTHS> {
+impl<PINS> serial::Read<u8> for Rx<UARTHS, PINS> {
     type Error = Infallible;
 
     fn read(&mut self) -> nb::Result<u8, Infallible> {
@@ -111,7 +121,7 @@ impl serial::Read<u8> for Rx<UARTHS> {
     }
 }
 
-impl serial::Write<u8> for Tx<UARTHS> {
+impl<PINS> serial::Write<u8> for Tx<UARTHS, PINS> {
     type Error = Infallible;
 
     fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
@@ -138,19 +148,27 @@ impl serial::Write<u8> for Tx<UARTHS> {
     }
 }
 
+mod closed_trait {
+    use core::ops::Deref;
+    /// Trait to be able to generalize over UART1/UART2/UART3
+    pub trait UartX: Deref<Target = super::uart1::RegisterBlock> {
+        const INDEX: u8;
+    }
+}
+use closed_trait::UartX;
 
-/// Trait to be able to generalize over UART1/UART2/UART3
-pub trait UartX: Deref<Target = uart1::RegisterBlock> { }
-impl UartX for UART1 { }
-impl UartX for UART2 { }
-impl UartX for UART3 { }
+impl UartX for UART1 { const INDEX: u8 = 1; }
+impl UartX for UART2 { const INDEX: u8 = 2; }
+impl UartX for UART3 { const INDEX: u8 = 3; }
 
 const UART_RECEIVE_FIFO_1: u32 = 0;
 const UART_SEND_FIFO_8: u32 = 3;
 
-impl<UART: UartX> SerialExt for UART {
-    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UART> {
+impl<UART: UartX, TX: ExternalPin, RX: ExternalPin> SerialExt<(TX, RX)> for UART {
+    fn configure(self, pins: (TX, RX), baud_rate: Bps, clocks: &Clocks) -> Serial<UART, (TX, RX)> {
         let uart = self;
+        fpioa::set_function(TX::INDEX, fpioa::Function::uart(UART::INDEX, fpioa::UartFunction::TX));
+        fpioa::set_function(RX::INDEX, fpioa::Function::uart(UART::INDEX, fpioa::UartFunction::RX));
 
         // Hardcode these for now:
         let data_width = 8; // 8 data bits
@@ -175,11 +193,11 @@ impl<UART: UartX> SerialExt for UART {
             uart.fcr_iir.write(|w| w.bits(UART_RECEIVE_FIFO_1 << 6 | UART_SEND_FIFO_8 << 4 | 0x1 << 3 | 0x1));
         }
 
-        Serial { uart }
+        Serial { uart, pins }
     }
 }
 
-impl<UART: UartX> Serial<UART> {
+impl<UART: UartX, PINS> Serial<UART, PINS> {
     /// Starts listening for an interrupt event
     pub fn listen(self) -> Self {
         self
@@ -191,7 +209,7 @@ impl<UART: UartX> Serial<UART> {
     }
 }
 
-impl<UART: UartX> serial::Read<u8> for Rx<UART> {
+impl<UART: UartX, PINS> serial::Read<u8> for Rx<UART, PINS> {
     type Error = Infallible;
 
     fn read(&mut self) -> nb::Result<u8, Infallible> {
@@ -206,7 +224,7 @@ impl<UART: UartX> serial::Read<u8> for Rx<UART> {
     }
 }
 
-impl<UART: UartX> serial::Write<u8> for Tx<UART> {
+impl<UART: UartX, PINS> serial::Write<u8> for Tx<UART, PINS> {
     type Error = Infallible;
 
     fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
