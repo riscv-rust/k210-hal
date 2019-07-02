@@ -357,6 +357,10 @@ pub fn set_function<N: Into<usize>>(number: N, function: Function) {
     }
 }
 
+pub fn clear_function<N: Into<usize>>(number: N) {
+    set_function(number, Function::RESV0);
+}
+
 pub fn set_io_pull<N: Into<usize>>(number: N, pull: Pull) {
     unsafe {
         let fpioa = &*k210_pac::FPIOA::ptr();
