@@ -8,7 +8,7 @@
 
 This project is developed and maintained by the [RISC-V team][team].
 
-## [Documentation](https://docs.rs/crate/k210-hal)
+## [Documentation](https://docs.rs/k210-hal)
 
 ## License
 
