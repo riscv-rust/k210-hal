@@ -1,6 +1,9 @@
+use core::mem;
+
 #[derive(Copy, Clone)]
 #[allow(non_camel_case_types)]
 #[allow(dead_code)]
+#[repr(u8)]
 pub enum Function {
     JTAG_TCLK = 0,        /* JTAG Test Clock */
     JTAG_TDI = 1,         /* JTAG Test Data In */
@@ -300,6 +303,52 @@ impl Function {
             _ => panic!("no such GPIO pin"),
         }
     }
+
+    pub fn uart(num: u8, func: UartFunction) -> Self {
+        assert!(1 <= num && num <= 3);
+
+        let index = num - 1;
+        let value = match func {
+            UartFunction::CTS       => Function::UART1_CTS      as u8 + index * 14,
+            UartFunction::DSR       => Function::UART1_DSR      as u8 + index * 14,
+            UartFunction::DCD       => Function::UART1_DCD      as u8 + index * 14,
+            UartFunction::RI        => Function::UART1_RI       as u8 + index * 14,
+            UartFunction::SIR_IN    => Function::UART1_SIR_IN   as u8 + index * 14,
+            UartFunction::DTR       => Function::UART1_DTR      as u8 + index * 14,
+            UartFunction::RTS       => Function::UART1_RTS      as u8 + index * 14,
+            UartFunction::OUT2      => Function::UART1_OUT2     as u8 + index * 14,
+            UartFunction::OUT1      => Function::UART1_OUT1     as u8 + index * 14,
+            UartFunction::SIR_OUT   => Function::UART1_SIR_OUT  as u8 + index * 14,
+            UartFunction::BAUD      => Function::UART1_BAUD     as u8 + index * 14,
+            UartFunction::RE        => Function::UART1_RE       as u8 + index * 14,
+            UartFunction::DE        => Function::UART1_DE       as u8 + index * 14,
+            UartFunction::RS485_EN  => Function::UART1_RS485_EN as u8 + index * 14,
+            UartFunction::RX        => Function::UART1_RX       as u8 + index * 2,
+            UartFunction::TX        => Function::UART1_TX       as u8 + index * 2,
+        };
+        unsafe { mem::transmute(value) }
+    }
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Copy, Clone)]
+pub enum UartFunction {
+    CTS,        /* UART Clear To Send */
+    DSR,        /* UART Data Set Ready */
+    DCD,        /* UART Data Carrier Detect */
+    RI,         /* UART Ring Indicator */
+    SIR_IN,     /* UART Serial Infrared Input */
+    DTR,        /* UART Data Terminal Ready */
+    RTS,        /* UART Request To Send */
+    OUT2,       /* UART User-designated Output 2 */
+    OUT1,       /* UART User-designated Output 1 */
+    SIR_OUT,    /* UART Serial Infrared Output */
+    BAUD,       /* UART Transmit Clock Output */
+    RE,         /* UART Receiver Output Enable */
+    DE,         /* UART Driver Output Enable */
+    RS485_EN,   /* UART RS485 Enable */
+    RX,         /* UART Receiver */
+    TX,         /* UART Transmitter */
 }
 
 #[derive(Copy, Clone)]
