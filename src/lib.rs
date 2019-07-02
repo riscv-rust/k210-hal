@@ -8,7 +8,11 @@
 pub use k210_pac as pac;
 
 pub mod clock;
+mod external_pins;
+mod peripherals;
 pub mod prelude;
 pub mod serial;
 pub mod stdout;
 pub mod time;
+
+pub use peripherals::Peripherals;
