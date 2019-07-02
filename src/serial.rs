@@ -17,54 +17,16 @@ use crate::pac::{UARTHS,uart1,UART1,UART2,UART3};
 use crate::clock::Clocks;
 use crate::time::Bps;
 
-const UART_RECEIVE_FIFO_1: u32 = 0;
-const UART_SEND_FIFO_8: u32 = 3;
 
 /// Extension trait that constrains UART peripherals
 pub trait SerialExt: Sized {
-    /// Configures UART peripheral
+    /// Configures a UART peripheral to provide serial communication
     fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<Self>;
-}
-
-impl SerialExt for UARTHS {
-    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UARTHS> {
-        Serial::<UARTHS>::new(self, baud_rate, clocks)
-    }
-}
-
-/// Trait to be able to generalize over UART1/UART2/UART3
-pub trait UartX: Deref<Target = uart1::RegisterBlock> { }
-impl UartX for UART1 { }
-impl UartX for UART2 { }
-impl UartX for UART3 { }
-
-impl<UART: UartX> SerialExt for UART {
-    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UART> {
-        Serial::<UART>::new(self, baud_rate, clocks)
-    }
 }
 
 /// Serial abstraction
 pub struct Serial<UART> {
     uart: UART,
-}
-
-/// Serial receiver
-pub struct Rx<UART> {
-    uart: UART,
-}
-
-/// Serial transmitter
-pub struct Tx<UART> {
-    uart: UART,
-}
-
-impl<UART> Rx<UART> {
-    /// Forms `Serial` abstraction from a transmitter and a
-    /// receiver half
-    pub fn join(self, _tx: Tx<UART>) -> Serial<UART> {
-        Serial { uart: self.uart }
-    }
 }
 
 impl<UART> Serial<UART> {
@@ -81,15 +43,33 @@ impl<UART> Serial<UART> {
         )
     }
 
+    /// Forms `Serial` abstraction from a transmitter and a
+    /// receiver half
+    pub fn join(self, tx: Tx<UART>, _rx: Rx<UART>) -> Self {
+        Serial { uart: tx.uart }
+    }
+
     /// Releases the UART peripheral
     pub fn free(self) -> UART {
         self.uart
     }
 }
 
-impl Serial<UARTHS> {
-    /// Configures a UART peripheral to provide serial communication
-    pub fn new(uart: UARTHS, baud_rate: Bps, clocks: &Clocks) -> Self {
+/// Serial receiver
+pub struct Rx<UART> {
+    uart: UART,
+}
+
+/// Serial transmitter
+pub struct Tx<UART> {
+    uart: UART,
+}
+
+
+impl SerialExt for UARTHS {
+    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UARTHS> {
+        let uart = self;
+
         let div = clocks.cpu().0 / baud_rate.0 - 1;
         unsafe {
             uart.div.write(|w| w.bits(div));
@@ -100,7 +80,9 @@ impl Serial<UARTHS> {
 
         Serial { uart }
     }
+}
 
+impl Serial<UARTHS> {
     /// Starts listening for an interrupt event
     pub fn listen(self) -> Self {
         self.uart.ie.write(|w| w.txwm().bit(false).rxwm().bit(true));
@@ -158,9 +140,19 @@ impl serial::Write<u8> for Tx<UARTHS> {
 }
 
 
-impl<UART: UartX> Serial<UART> {
-    /// Configures a UART peripheral to provide serial communication
-    pub fn new(uart: UART, baud_rate: Bps, clocks: &Clocks) -> Self {
+/// Trait to be able to generalize over UART1/UART2/UART3
+pub trait UartX: Deref<Target = uart1::RegisterBlock> { }
+impl UartX for UART1 { }
+impl UartX for UART2 { }
+impl UartX for UART3 { }
+
+const UART_RECEIVE_FIFO_1: u32 = 0;
+const UART_SEND_FIFO_8: u32 = 3;
+
+impl<UART: UartX> SerialExt for UART {
+    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UART> {
+        let uart = self;
+
         // Hardcode these for now:
         let data_width = 8; // 8 data bits
         let stopbit_val = 0; // 1 stop bit
@@ -186,7 +178,9 @@ impl<UART: UartX> Serial<UART> {
 
         Serial { uart }
     }
+}
 
+impl<UART: UartX> Serial<UART> {
     /// Starts listening for an interrupt event
     pub fn listen(self) -> Self {
         self
