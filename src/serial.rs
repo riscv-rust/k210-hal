@@ -22,12 +22,12 @@ const UART_SEND_FIFO_8: u32 = 3;
 
 /// Extension trait that constrains UART peripherals
 pub trait SerialExt: Sized {
-    /// Constrains UART peripheral so it plays nicely with the other abstractions
-    fn constrain(self, baud_rate: Bps, clocks: &Clocks) -> Serial<Self>;
+    /// Configures UART peripheral
+    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<Self>;
 }
 
 impl SerialExt for UARTHS {
-    fn constrain(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UARTHS> {
+    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UARTHS> {
         Serial::<UARTHS>::new(self, baud_rate, clocks)
     }
 }
@@ -39,7 +39,7 @@ impl UartX for UART2 { }
 impl UartX for UART3 { }
 
 impl<UART: UartX> SerialExt for UART {
-    fn constrain(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UART> {
+    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UART> {
         Serial::<UART>::new(self, baud_rate, clocks)
     }
 }
