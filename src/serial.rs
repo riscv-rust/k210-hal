@@ -11,7 +11,6 @@ use core::ops::Deref;
 use core::convert::Infallible;
 
 use embedded_hal::serial;
-use nb;
 
 use crate::pac::{UARTHS,uart1,UART1,UART2,UART3};
 use crate::clock::Clocks;
@@ -105,7 +104,7 @@ impl serial::Read<u8> for Rx<UARTHS> {
         let rxdata = self.uart.rxdata.read();
 
         if rxdata.empty().bit_is_set() {
-            Err(::nb::Error::WouldBlock)
+            Err(nb::Error::WouldBlock)
         } else {
             Ok(rxdata.data().bits() as u8)
         }
@@ -119,7 +118,7 @@ impl serial::Write<u8> for Tx<UARTHS> {
         let txdata = self.uart.txdata.read();
 
         if txdata.full().bit_is_set() {
-            Err(::nb::Error::WouldBlock)
+            Err(nb::Error::WouldBlock)
         } else {
             unsafe {
                 (*UARTHS::ptr()).txdata.write(|w| w.data().bits(byte));
@@ -199,7 +198,7 @@ impl<UART: UartX> serial::Read<u8> for Rx<UART> {
         let lsr = self.uart.lsr.read();
 
         if (lsr.bits() & (1<<0)) == 0 { // Data Ready bit
-            Err(::nb::Error::WouldBlock)
+            Err(nb::Error::WouldBlock)
         } else {
             let rbr = self.uart.rbr_dll_thr.read();
             Ok((rbr.bits() & 0xff) as u8)
@@ -214,7 +213,7 @@ impl<UART: UartX> serial::Write<u8> for Tx<UART> {
         let lsr = self.uart.lsr.read();
 
         if (lsr.bits() & (1<<5)) != 0 { // Transmit Holding Register Empty bit
-            Err(::nb::Error::WouldBlock)
+            Err(nb::Error::WouldBlock)
         } else {
             unsafe {
                 self.uart.rbr_dll_thr.write(|w| w.bits(byte.into()));
