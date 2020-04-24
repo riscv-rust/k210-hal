@@ -12,4 +12,4 @@ edition = "2018"
 [dependencies]
 embedded-hal = { version = "0.2.1", features = ["unproven"] }
 nb = "0.1.1"
-k210-pac = { version = "0.2.0", features = ["rt"] }
+k210-pac = "0.2.0"
