@@ -420,3 +420,63 @@ pub fn set_io_pull<N: Into<usize>>(number: N, pull: Pull) {
         });
     }
 }
+
+/* 
+    new design: Split FPIOA into several IO pins (IO0, IO1, .., IO47)
+    with ownership of IOx struct we may change their functions.
+    For GPIOs and GPIOHS's we should split them into another GpioXx structs.
+
+    note: other modules do not need to require for ownership of certain IOx struct
+    for that pins and peripherals are considered separate modules.
+    If this design results in inconvenience or violent of Rust's ownership role
+    please fire an issue to tell us.
+*/
+
+use crate::pac::FPIOA;
+use core::marker::PhantomData;
+
+pub trait FpioaExt {
+    // todo: split sysctl into two apb's, then use the APB0 to split Fpioa
+    fn split(self) -> Parts;
+}
+
+impl FpioaExt for FPIOA {
+    fn split(self) -> Parts {
+        // todo: use APB0 to enable fpioa clock (ref: sysctl.c)
+        Parts {
+            io5: IO5 { _function: PhantomData }
+        }
+    }
+}
+
+pub struct Parts {
+    pub io5: IO5<UarthsTx>,
+    // todo: all 48 external IO pins
+
+    // todo: tie controller Tie (force set high or low as input)
+}
+
+pub struct IO5<FUNC> {
+    _function: PhantomData<FUNC>
+}
+
+impl<FUNC> IO5<FUNC> {
+    pub fn into_function<F: FpioFunction>(func: F) -> IO5<F> {
+        let _ = func; // note(discard): Zero-sized typestate value
+        unsafe { &(*FPIOA::ptr()).io[F::INDEX as usize].write(|w|
+            w.bits(FUNCTION_DEFAULTS[F::INDEX as usize])
+        ) };
+        IO5 { _function: PhantomData }
+    }
+}
+
+// todo: rename this trait to Function
+pub trait FpioFunction {
+    const INDEX: u8;
+}
+
+pub struct UarthsTx;
+
+impl FpioFunction for UarthsTx { 
+    const INDEX: u8 = 19;
+}
