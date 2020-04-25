@@ -136,15 +136,19 @@ impl<PIN> StatefulOutputPin for Gpio<GPIO6, PIN, Output> {
     }
 }
 
-impl<PIN> ToggleableOutputPin for Gpio<GPIO6, PIN, Output> {
-    type Error = core::convert::Infallible;
+// todo: fix atomic operation
 
-    fn toggle(&mut self) -> Result<(), Self::Error> { 
-        let r: &AtomicU32 = unsafe { &*(&(*GPIO::ptr()).data_output as *const _ as *const _) };
-        u32_atomic_toggle_bit(r, 6);
-        Ok(())
-    }
-}
+// impl<PIN> ToggleableOutputPin for Gpio<GPIO6, PIN, Output> {
+//     type Error = core::convert::Infallible;
+
+//     fn toggle(&mut self) -> Result<(), Self::Error> { 
+//         let r: &AtomicU32 = unsafe { &*(&(*GPIO::ptr()).data_output as *const _ as *const _) };
+//         u32_atomic_toggle_bit(r, 6);
+//         Ok(())
+//     }
+// }
+
+impl<PIN> embedded_hal::digital::v2::toggleable::Default for Gpio<GPIO6, PIN, Output> {}
 
 impl<PIN, MODE> InputPin for Gpio<GPIO6, PIN, Input<MODE>> {
     type Error = core::convert::Infallible;
