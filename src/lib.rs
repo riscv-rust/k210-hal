@@ -2,14 +2,14 @@
 //!
 //! This is an implementation of the [`embedded-hal`] traits for the K210 SoC
 
-#![deny(missing_docs)]
+// #![deny(missing_docs)] // uncomment for every releases
 #![no_std]
 
 pub use k210_pac as pac;
 
 pub mod clock;
 mod external_pins;
-mod fpioa;
+pub mod fpioa;
 mod peripherals;
 pub mod prelude;
 pub mod serial;

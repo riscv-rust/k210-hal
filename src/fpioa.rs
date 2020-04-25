@@ -461,7 +461,7 @@ pub struct IO5<FUNC> {
 }
 
 impl<FUNC> IO5<FUNC> {
-    pub fn into_function<F: FpioFunction>(func: F) -> IO5<F> {
+    pub fn into_function<F: FpioFunction>(self, func: F) -> IO5<F> {
         let _ = func; // note(discard): Zero-sized typestate value
         unsafe { &(*FPIOA::ptr()).io[F::INDEX as usize].write(|w|
             w.bits(FUNCTION_DEFAULTS[F::INDEX as usize])
