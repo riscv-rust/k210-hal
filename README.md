@@ -4,7 +4,8 @@
 
 # `k210-hal`
 
-> HAL for K210 SoC
+> Hardware abstract layer (HAL) for K210 chip, a dual RV64GC SoC with hardware
+> accelerated AI peripherals.
 
 This project is developed and maintained by the [RISC-V team][team].
 

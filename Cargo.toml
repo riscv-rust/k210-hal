@@ -10,6 +10,6 @@ license = "ISC"
 edition = "2018"
 
 [dependencies]
-embedded-hal = { version = "0.2.1", features = ["unproven"] }
+embedded-hal = { version = "0.2.3", features = ["unproven"] }
 nb = "0.1.1"
 k210-pac = "0.2.0"
