@@ -351,16 +351,6 @@ pub enum UartFunction {
     TX,         /* UART Transmitter */
 }
 
-#[derive(Copy, Clone)]
-pub enum Pull {
-    /** No Pull */
-    NONE,
-    /** Pull Down */
-    DOWN,
-    /** Pull Up */
-    UP,
-}
-
 /** Defaults per function (from Kendryte fpioa.c) */
 #[cfg_attr(rustfmt, rustfmt_skip)]
 static FUNCTION_DEFAULTS: &[u32] = &[
@@ -410,17 +400,6 @@ pub fn clear_function<N: Into<usize>>(number: N) {
     set_function(number, Function::RESV0);
 }
 
-pub fn set_io_pull<N: Into<usize>>(number: N, pull: Pull) {
-    unsafe {
-        let fpioa = &*k210_pac::FPIOA::ptr();
-        fpioa.io[number.into()].modify(|_, w| match pull {
-            Pull::NONE => w.pu().bit(false).pd().bit(false),
-            Pull::DOWN => w.pu().bit(false).pd().bit(true),
-            Pull::UP => w.pu().bit(true).pd().bit(false),
-        });
-    }
-}
-
 /* 
     new design: Split FPIOA into several IO pins (IO0, IO1, .., IO47)
     with ownership of IOx struct we may change their functions.
@@ -444,13 +423,15 @@ impl FpioaExt for FPIOA {
     fn split(self) -> Parts {
         // todo: use APB0 to enable fpioa clock (ref: sysctl.c)
         Parts {
-            io5: IO5 { _function: PhantomData }
+            io5: IO5 { _function: PhantomData },
+            io14: IO14 { _function: PhantomData },
         }
     }
 }
 
 pub struct Parts {
     pub io5: IO5<UarthsTx>,
+    pub io14: IO14<Gpio6>,
     // todo: all 48 external IO pins
 
     // todo: tie controller Tie (force set high or low as input)
@@ -463,12 +444,28 @@ pub struct IO5<FUNC> {
 impl<FUNC> IO5<FUNC> {
     pub fn into_function<F: FpioFunction>(self, func: F) -> IO5<F> {
         let _ = func; // note(discard): Zero-sized typestate value
-        unsafe { &(*FPIOA::ptr()).io[F::INDEX as usize].write(|w|
+        unsafe { &(*FPIOA::ptr()).io[5].write(|w|
             w.bits(FUNCTION_DEFAULTS[F::INDEX as usize])
         ) };
         IO5 { _function: PhantomData }
     }
 }
+
+
+pub struct IO14<FUNC> {
+    _function: PhantomData<FUNC>
+}
+
+impl<FUNC> IO14<FUNC> {
+    pub fn into_function<F: FpioFunction>(self, func: F) -> IO14<F> {
+        let _ = func; // note(discard): Zero-sized typestate value
+        unsafe { &(*FPIOA::ptr()).io[14].write(|w|
+            w.bits(FUNCTION_DEFAULTS[F::INDEX as usize])
+        ) };
+        IO14 { _function: PhantomData }
+    }
+}
+
 
 // todo: rename this trait to Function
 pub trait FpioFunction {
@@ -477,6 +474,46 @@ pub trait FpioFunction {
 
 pub struct UarthsTx;
 
+
 impl FpioFunction for UarthsTx { 
     const INDEX: u8 = 19;
+}
+pub struct Gpio6;
+
+impl FpioFunction for Gpio6 { 
+    const INDEX: u8 = 62;
+}
+
+#[derive(Copy, Clone)]
+pub enum Pull {
+    /** No Pull */
+    None,
+    /** Pull Down */
+    Down,
+    /** Pull Up */
+    Up,
+}
+
+#[doc(hidden)]
+pub trait IoPin {
+    const INDEX: u8;
+
+    fn set_io_pull(&mut self, pull: Pull) {
+        unsafe {
+            let fpioa = &*k210_pac::FPIOA::ptr();
+            fpioa.io[Self::INDEX as usize].modify(|_, w| match pull {
+                Pull::None => w.pu().bit(false).pd().bit(false),
+                Pull::Down => w.pu().bit(false).pd().bit(true),
+                Pull::Up => w.pu().bit(true).pd().bit(false),
+            });
+        }
+    }
+}
+
+impl<FUNC> IoPin for IO5<FUNC> {
+    const INDEX: u8 = 5;
+}
+
+impl<FUNC> IoPin for IO14<FUNC> {
+    const INDEX: u8 = 14;
 }
