@@ -12,10 +12,12 @@ if: (branch = staging OR branch = trying OR branch = master) OR (type = pull_req
 
 
 install:
-  - ci/install.sh
+  - set -euxo pipefail
+  - rustup target add $TARGET
 
 script:
-  - ci/script.sh
+  - set -euxo pipefail
+  - cargo check --target $TARGET
 
 branches:
   only:

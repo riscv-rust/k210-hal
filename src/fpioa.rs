@@ -91,7 +91,7 @@ $(
         /// 
         /// You may refer to module [functions] for all functions.
         /// 
-        /// [functions]: ../mod.functions.html
+        /// [functions]: ../functions/index.html
         pub fn into_function<F: Function>(self, func: F) -> $IoX<F> {
             let _ = func; // note(discard): Zero-sized typestate value
             unsafe { &(*FPIOA::ptr()).io[$id].write(|w|
