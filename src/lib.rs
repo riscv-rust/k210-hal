@@ -32,7 +32,7 @@ pub mod prelude {
     pub use crate::gpio::GpioExt as _k210_hal_gpio_GpioExt;
 }
 
-mod atomic {
+mod bit_utils {
     use core::sync::atomic::{AtomicU32, Ordering};
     // This function uses AtomicU32, compiles into atomic instructions to prevent data race
     // and optimize for speed.
@@ -66,5 +66,15 @@ mod atomic {
     pub(crate) fn u32_atomic_toggle_bit(r: &AtomicU32, index: usize) {
         let mask = 1 << index;
         r.fetch_xor(mask, Ordering::Relaxed);
+    }
+
+    #[inline(always)]
+    pub(crate) fn u32_bit_is_set(r: &u32, index: usize) -> bool {
+        (r & 1 << index) != 0
+    }
+
+    #[inline(always)]
+    pub(crate) fn u32_bit_is_clear(r: &u32, index: usize) -> bool {
+        (r & 1 << index) == 0
     }
 }

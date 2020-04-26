@@ -30,7 +30,7 @@ pub enum Pull {
     Up,
 }
 
-#[doc(hidden)]
+/// FPIOA I/O Pin
 pub trait IoPin {
     const INDEX: u8;
 
