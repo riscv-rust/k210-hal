@@ -3,7 +3,7 @@
 use core::marker::PhantomData;
 use core::sync::atomic::AtomicU32;
 use crate::pac;
-use crate::fpioa::{IoPin, Pull};
+use crate::fpioa::{IoPin, Pull, Mode};
 use crate::bit_utils::{u32_atomic_set_bit, u32_atomic_toggle_bit, u32_bit_is_set, u32_bit_is_clear};
 use embedded_hal::digital::v2::{OutputPin, StatefulOutputPin, InputPin, ToggleableOutputPin};
 
@@ -16,7 +16,7 @@ pub trait GpioExt {
 }
 
 macro_rules! def_gpio_pins {
-    ($($GPIOX: ident: ($num: expr, $gpiox: ident);)+) => {
+    ($($GPIOX: ident: ($num: expr, $gpiox: ident, $func: ident);)+) => {
         
 impl GpioExt for pac::GPIO {
     fn split(self) -> Parts {
@@ -47,6 +47,7 @@ $(
     }
 
     impl GpioIndex for $GPIOX {
+        type FUNC = crate::fpioa::functions::$func;
         const INDEX: u8 = $num;
     }
 )+
@@ -55,18 +56,19 @@ $(
 }
 
 def_gpio_pins! {
-    GPIO0: (0, gpio0);
-    GPIO1: (1, gpio1);
-    GPIO2: (2, gpio2);
-    GPIO3: (3, gpio3);
-    GPIO4: (4, gpio4);
-    GPIO5: (5, gpio5);
-    GPIO6: (6, gpio6);
-    GPIO7: (7, gpio7);
+    GPIO0: (0, gpio0, GPIO0);
+    GPIO1: (1, gpio1, GPIO1);
+    GPIO2: (2, gpio2, GPIO2);
+    GPIO3: (3, gpio3, GPIO3);
+    GPIO4: (4, gpio4, GPIO4);
+    GPIO5: (5, gpio5, GPIO5);
+    GPIO6: (6, gpio6, GPIO6);
+    GPIO7: (7, gpio7, GPIO7);
 }
 
 /// GPIO Index
 pub trait GpioIndex {
+    type FUNC;
     const INDEX: u8;
 }
 
@@ -108,8 +110,7 @@ pub struct Gpio<GPIO, PIN, MODE> {
     _mode: PhantomData<MODE>,
 }
 
-impl<GPIO, PIN> Gpio<GPIO, PIN, Unknown> {
-    // todo: verify default GPIO mode
+impl<GPIO: GpioIndex, PIN: Mode<GPIO::FUNC>> Gpio<GPIO, PIN, Unknown> {
     pub fn new(gpio: GPIO, pin: PIN) -> Gpio<GPIO, PIN, Unknown> {
         Gpio { gpio, pin, _mode: PhantomData }
     }

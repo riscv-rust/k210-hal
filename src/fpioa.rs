@@ -44,7 +44,18 @@ pub trait IoPin {
             });
         }
     }
+
+    #[doc(hidden)]
+    #[inline(always)]
+    unsafe fn set_function<F: Function>(&mut self) {
+        &(*FPIOA::ptr()).io[Self::INDEX as usize].write(|w|
+            w.bits(FUNCTION_DEFAULTS[F::INDEX as usize])
+        );
+    }
 }
+
+/// Marker trait for I/O pin function detection
+pub trait Mode<FUNC> {}
 
 /// Extension trait to split a FPIOA peripheral in independent pins and registers
 pub trait FpioaExt {
@@ -77,7 +88,7 @@ pub use io_pins::*;
 /// All I/O pins
 pub mod io_pins {
     use core::marker::PhantomData;
-    use super::{Function, IoPin, FUNCTION_DEFAULTS};
+    use super::{Function, IoPin, Mode, FUNCTION_DEFAULTS};
     use crate::pac::FPIOA;
                     
 $(
@@ -103,6 +114,7 @@ $(
     impl<FUNC> IoPin for $IoX<FUNC> {
         const INDEX: u8 = $id;
     }
+    impl<FUNC> Mode<FUNC> for $IoX<FUNC> {}
 )+
 }
     };
