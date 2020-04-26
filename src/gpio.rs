@@ -29,7 +29,10 @@ impl GpioExt for pac::GPIO {
 
 /// GPIO peripheral parts
 pub struct Parts {
-    $( pub $gpiox: $GPIOX, )+
+    $(
+        /// GPIO pin
+        pub $gpiox: $GPIOX,
+    )+
 }
 
 pub use gpio_pins::*;
