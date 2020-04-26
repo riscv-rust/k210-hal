@@ -70,6 +70,9 @@ pub trait GpioIndex {
     const INDEX: u8;
 }
 
+/// Unknown mode (type state)
+pub struct Unknown;
+
 /// Input mode (type state)
 pub struct Input<MODE>(MODE);
 
@@ -88,6 +91,8 @@ pub struct Output;
 /// Marker trait for active states
 pub trait Active {}
 
+impl Active for Unknown {}
+
 impl Active for Input<Floating> {}
 
 impl Active for Input<PullUp> {}
@@ -103,10 +108,16 @@ pub struct Gpio<GPIO, PIN, MODE> {
     _mode: PhantomData<MODE>,
 }
 
-impl<GPIO, PIN> Gpio<GPIO, PIN, Input<Floating>> {
+impl<GPIO, PIN> Gpio<GPIO, PIN, Unknown> {
     // todo: verify default GPIO mode
-    pub fn new(gpio: GPIO, pin: PIN) -> Gpio<GPIO, PIN, Input<Floating>> {
+    pub fn new(gpio: GPIO, pin: PIN) -> Gpio<GPIO, PIN, Unknown> {
         Gpio { gpio, pin, _mode: PhantomData }
+    }
+}
+
+impl<GPIO, PIN, MODE> Gpio<GPIO, PIN, MODE> {
+    pub fn free(self) -> (GPIO, PIN) {
+        (self.gpio, self.pin)
     }
 }
 
@@ -184,12 +195,12 @@ impl<GPIO: GpioIndex, PIN> StatefulOutputPin for Gpio<GPIO, PIN, Output> {
 
 // todo: fix atomic operation
 
-// impl<PIN> ToggleableOutputPin for Gpio<GPIO6, PIN, Output> {
+// impl<GPIO: GpioIndex, PIN> ToggleableOutputPin for Gpio<GPIO, PIN, Output> {
 //     type Error = core::convert::Infallible;
 
 //     fn toggle(&mut self) -> Result<(), Self::Error> { 
-//         let r: &AtomicU32 = unsafe { &*(&(*GPIO::ptr()).data_output as *const _ as *const _) };
-//         u32_atomic_toggle_bit(r, 6);
+//         let r: &AtomicU32 = unsafe { &*(&(*pac::GPIO::ptr()).data_output as *const _ as *const _) };
+//         u32_atomic_toggle_bit(r, GPIO::INDEX as usize);
 //         Ok(())
 //     }
 // }
