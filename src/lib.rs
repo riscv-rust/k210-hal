@@ -10,6 +10,7 @@ pub use k210_pac as pac;
 pub mod clock;
 pub mod fpioa;
 pub mod gpio;
+pub mod gpiohs;
 pub mod serial;
 pub mod stdout;
 pub mod sysctl;
@@ -54,9 +55,9 @@ mod bit_utils {
     pub(crate) fn u32_atomic_set_bit(r: &AtomicU32, is_one: bool, index: usize) {
         let mask = 1 << index;
         if is_one {
-            r.fetch_or(mask, Ordering::Relaxed);
+            r.fetch_or(mask, Ordering::SeqCst);
         } else {
-            r.fetch_and(!mask, Ordering::Relaxed);
+            r.fetch_and(!mask, Ordering::SeqCst);
         }
     }
 
@@ -65,7 +66,7 @@ mod bit_utils {
     #[inline(always)]
     pub(crate) fn u32_atomic_toggle_bit(r: &AtomicU32, index: usize) {
         let mask = 1 << index;
-        r.fetch_xor(mask, Ordering::Relaxed);
+        r.fetch_xor(mask, Ordering::SeqCst);
     }
 
     #[inline(always)]
