@@ -31,6 +31,7 @@ pub mod prelude {
     pub use crate::fpioa::FpioaExt as _k210_hal_fpioa_FpioaExt;
     pub use crate::sysctl::SysctlExt as _k210_hal_sysctl_SysctlExt;
     pub use crate::gpio::GpioExt as _k210_hal_gpio_GpioExt;
+    pub use crate::gpiohs::GpiohsExt as _k210_hal_gpiohs_GpiohsExt;
 }
 
 mod bit_utils {
