@@ -136,8 +136,21 @@ use crate::fpioa::{Pull, IoPin};
 impl<GPIOHS: GpiohsIndex, PIN: IoPin, MODE> Gpiohs<GPIOHS, PIN, MODE> {
     pub fn into_pull_up_input(mut self) -> Gpiohs<GPIOHS, PIN, Input<PullUp>> {
         self.pin.set_io_pull(Pull::Up);
-        let r: &AtomicU32 = unsafe { &*(&(*pac::GPIO::ptr()).direction as *const _ as *const _) };
-        u32_atomic_set_bit(r, false, GPIOHS::INDEX as usize);
+        // let r: &AtomicU32 = unsafe { &*(&(*pac::GPIOHS::ptr()).input_en as *const _ as *const _) };
+        // u32_atomic_set_bit(r, true, GPIOHS::INDEX as usize);
+        // let r: &AtomicU32 = unsafe { &*(&(*pac::GPIOHS::ptr()).output_en as *const _ as *const _) };
+        // u32_atomic_set_bit(r, false, GPIOHS::INDEX as usize);
+        unsafe {
+            let ptr = pac::GPIOHS::ptr();
+            (*ptr)
+                .output_en
+                .modify(|r, w| 
+                    w.bits(r.bits() & !(1 << (GPIOHS::INDEX as usize))));
+            (*ptr)
+                .input_en
+                .modify(|r, w| 
+                    w.bits(r.bits() | (1 << (GPIOHS::INDEX as usize))));
+        }
         Gpiohs { gpiohs: self.gpiohs, pin: self.pin, _mode: PhantomData }
     }
     // todo: all modes
@@ -147,12 +160,16 @@ impl<GPIOHS: GpiohsIndex, PIN, MODE> InputPin for Gpiohs<GPIOHS, PIN, Input<MODE
     type Error = core::convert::Infallible;
 
     fn is_high(&self) -> Result<bool, Self::Error> { 
-        let r: &u32 = unsafe { &*(&(*pac::GPIOHS::ptr()).input_val as *const _ as *const _) };
-        Ok(u32_bit_is_set(r, GPIOHS::INDEX as usize))
+        Ok(unsafe { 
+            ((*pac::GPIOHS::ptr()).input_val.read().bits()
+            & (1 << GPIOHS::INDEX as usize)) != 0
+        } )
     }
 
     fn is_low(&self) -> Result<bool, Self::Error> { 
-        let r: &u32 = unsafe { &*(&(*pac::GPIOHS::ptr()).input_val as *const _ as *const _) };
-        Ok(u32_bit_is_clear(r, GPIOHS::INDEX as usize))
+        Ok(unsafe { 
+            ((*pac::GPIOHS::ptr()).input_val.read().bits()
+            & (1 << GPIOHS::INDEX as usize)) == 0
+        } )
     }
 }

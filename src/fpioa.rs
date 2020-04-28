@@ -44,14 +44,6 @@ pub trait IoPin {
             });
         }
     }
-
-    #[doc(hidden)]
-    #[inline(always)]
-    unsafe fn set_function<F: Function>(&mut self) {
-        &(*FPIOA::ptr()).io[Self::INDEX as usize].write(|w|
-            w.bits(FUNCTION_DEFAULTS[F::INDEX as usize])
-        );
-    }
 }
 
 /// Marker trait for I/O pin function detection
