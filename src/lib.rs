@@ -35,39 +35,20 @@ pub mod prelude {
 }
 
 mod bit_utils {
-    use core::sync::atomic::{AtomicU32, Ordering};
-    // This function uses AtomicU32, compiles into atomic instructions to prevent data race
-    // and optimize for speed.
-    //
-    // If we don't do like this, we would need to go into critical section, where additional
-    // interrupt disabling and enabling operations are required, which needs lots of CSR
-    // read/write instructions and costs lot of time.
-    //
-    // For all `is_one: true` params, the core feature of this function compiles into
-    // only one atomic instruction `amoor.w` to set the target register.
-    // (For `is_one: false` params, it compiles into ont `amoand.w`).
-    // Additional instructions to set the mask may differ between actual applications,
-    // this part may cost additional one to two instructions (mainly `lui` and `addi`).
-    //
-    // Note: we uses `fetch_and(!mask, ...)` instead of `fetch_nand(mask, ...)`; that's
-    // because RISC-V's RV32A does not provide an atomic nand instruction, thus `rustc`
-    // may compile code into very long binary output.
     #[inline(always)]
-    pub(crate) fn u32_atomic_set_bit(r: &AtomicU32, is_one: bool, index: usize) {
+    pub(crate) fn u32_set_bit(r: &mut u32, is_one: bool, index: usize) {
         let mask = 1 << index;
         if is_one {
-            r.fetch_or(mask, Ordering::SeqCst);
+            *r |= mask;
         } else {
-            r.fetch_and(!mask, Ordering::SeqCst);
+            *r &= !mask;
         }
     }
 
-    // This function compiles into RV32A's `amoxor.w` instruction to prevent data
-    // race as well as optimize for speed.
     #[inline(always)]
-    pub(crate) fn u32_atomic_toggle_bit(r: &AtomicU32, index: usize) {
+    pub(crate) fn u32_toggle_bit(r: &mut u32, index: usize) {
         let mask = 1 << index;
-        r.fetch_xor(mask, Ordering::SeqCst);
+        *r ^= mask;
     }
 
     #[inline(always)]

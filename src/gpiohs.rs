@@ -2,10 +2,9 @@
 
 use crate::pac;
 use crate::fpioa::Mode;
-use core::sync::atomic::AtomicU32;
 use core::mem::transmute;
 use core::marker::PhantomData;
-use crate::bit_utils::{u32_atomic_set_bit, u32_atomic_toggle_bit, u32_bit_is_set, u32_bit_is_clear};
+use crate::bit_utils::{u32_set_bit, u32_toggle_bit, u32_bit_is_set, u32_bit_is_clear};
 use embedded_hal::digital::v2::InputPin;
 
 pub trait GpiohsIndex {
@@ -14,12 +13,12 @@ pub trait GpiohsIndex {
 }
 
 trait GpiohsAccess {
-    fn peripheral() -> &'static pac::gpiohs::RegisterBlock;
+    fn peripheral() -> &'static mut pac::gpiohs::RegisterBlock;
 
     fn set_drive(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &AtomicU32 = unsafe { transmute(&p.drive) };
-        u32_atomic_set_bit(r, bit, index);
+        let r: &mut u32 = unsafe { transmute(&mut p.drive) };
+        u32_set_bit(r, bit, index);
     }
 
     fn input_value(index: usize) -> bool {
@@ -29,50 +28,50 @@ trait GpiohsAccess {
 
     fn set_input_en(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &AtomicU32 = unsafe { transmute(&p.input_en) };
-        u32_atomic_set_bit(r, bit, index);
+        let r: &mut u32 = unsafe { transmute(&mut p.input_en) };
+        u32_set_bit(r, bit, index);
     }
 
     fn set_iof_en(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &AtomicU32 = unsafe { transmute(&p.iof_en) };
-        u32_atomic_set_bit(r, bit, index);
+        let r: &mut u32 = unsafe { transmute(&mut p.iof_en) };
+        u32_set_bit(r, bit, index);
     }
 
     fn set_iof_sel(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &AtomicU32 = unsafe { transmute(&p.iof_sel) };
-        u32_atomic_set_bit(r, bit, index);
+        let r: &mut u32 = unsafe { transmute(&mut p.iof_sel) };
+        u32_set_bit(r, bit, index);
     }
 
     fn set_output_en(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &AtomicU32 = unsafe { transmute(&p.output_en) };
-        u32_atomic_set_bit(r, bit, index);
+        let r: &mut u32 = unsafe { transmute(&mut p.output_en) };
+        u32_set_bit(r, bit, index);
     }
 
     fn set_output_value(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &AtomicU32 = unsafe { transmute(&p.output_val) };
-        u32_atomic_set_bit(r, bit, index);
+        let r: &mut u32 = unsafe { transmute(&mut p.output_val) };
+        u32_set_bit(r, bit, index);
     }
 
     fn set_output_xor(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &AtomicU32 = unsafe { transmute(&p.output_xor) };
-        u32_atomic_set_bit(r, bit, index);
+        let r: &mut u32 = unsafe { transmute(&mut p.output_xor) };
+        u32_set_bit(r, bit, index);
     }
 
     fn toggle_pin(index: usize) {
         let p = Self::peripheral();
-        let r: &AtomicU32 = unsafe { transmute(&p.output_val) };
-        u32_atomic_toggle_bit(r, index);
+        let r: &mut u32 = unsafe { transmute(&mut p.output_val) };
+        u32_toggle_bit(r, index);
     }
 
     fn set_pullup_en(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &AtomicU32 = unsafe { transmute(&p.pullup_en) };
-        u32_atomic_set_bit(r, bit, index);
+        let r: &mut u32 = unsafe { transmute(&mut p.pullup_en) };
+        u32_set_bit(r, bit, index);
     }
 
     // todo: {high, low, fall, rise}_{ie, ip}
@@ -136,10 +135,10 @@ use crate::fpioa::{Pull, IoPin};
 impl<GPIOHS: GpiohsIndex, PIN: IoPin, MODE> Gpiohs<GPIOHS, PIN, MODE> {
     pub fn into_pull_up_input(mut self) -> Gpiohs<GPIOHS, PIN, Input<PullUp>> {
         self.pin.set_io_pull(Pull::Up);
-        // let r: &AtomicU32 = unsafe { &*(&(*pac::GPIOHS::ptr()).input_en as *const _ as *const _) };
-        // u32_atomic_set_bit(r, true, GPIOHS::INDEX as usize);
-        // let r: &AtomicU32 = unsafe { &*(&(*pac::GPIOHS::ptr()).output_en as *const _ as *const _) };
-        // u32_atomic_set_bit(r, false, GPIOHS::INDEX as usize);
+        // let r: &mut u32 = unsafe { &*(&(*pac::GPIOHS::ptr()).input_en as *const _ as *const _) };
+        // u32_set_bit(r, true, GPIOHS::INDEX as usize);
+        // let r: &mut u32 = unsafe { &*(&(*pac::GPIOHS::ptr()).output_en as *const _ as *const _) };
+        // u32_set_bit(r, false, GPIOHS::INDEX as usize);
         unsafe {
             let ptr = pac::GPIOHS::ptr();
             (*ptr)

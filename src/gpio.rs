@@ -1,10 +1,9 @@
 //! General Purpose Input/Output (GPIO)
 
 use core::marker::PhantomData;
-use core::sync::atomic::AtomicU32;
 use crate::pac;
 use crate::fpioa::{IoPin, Pull, Mode};
-use crate::bit_utils::{u32_atomic_set_bit, u32_atomic_toggle_bit, u32_bit_is_set, u32_bit_is_clear};
+use crate::bit_utils::{u32_set_bit, u32_toggle_bit, u32_bit_is_set, u32_bit_is_clear};
 use embedded_hal::digital::v2::{OutputPin, StatefulOutputPin, InputPin, ToggleableOutputPin};
 
 /// Extension trait to split a GPIO peripheral into independent pins
@@ -131,7 +130,7 @@ impl<GPIO: GpioIndex, PIN, MODE> InputPin for Gpio<GPIO, PIN, Input<MODE>> {
     }
 
     fn is_low(&self) -> Result<bool, Self::Error> { 
-        let r: &u32 = unsafe { &*(&(*pac::GPIO::ptr()).data_input as *const _ as *const _) };
+        let r: &u32 = unsafe { &*(&(*pac::GPIO::ptr()).data_input as *const _ as *mut _) };
         Ok(u32_bit_is_clear(r, GPIO::INDEX as usize))
     }
 }
@@ -139,29 +138,29 @@ impl<GPIO: GpioIndex, PIN, MODE> InputPin for Gpio<GPIO, PIN, Input<MODE>> {
 impl<GPIO: GpioIndex, PIN: IoPin, MODE: Active> Gpio<GPIO, PIN, MODE> {
     pub fn into_floating_input(mut self) -> Gpio<GPIO, PIN, Input<Floating>> {
         self.pin.set_io_pull(Pull::None);
-        let r: &AtomicU32 = unsafe { &*(&(*pac::GPIO::ptr()).direction as *const _ as *const _) };
-        u32_atomic_set_bit(r, false, GPIO::INDEX as usize);
+        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIO::ptr()).direction as *const _ as *mut _) };
+        u32_set_bit(r, false, GPIO::INDEX as usize);
         Gpio { gpio: self.gpio, pin: self.pin, _mode: PhantomData }
     }
 
     pub fn into_pull_up_input(mut self) -> Gpio<GPIO, PIN, Input<PullUp>> {
         self.pin.set_io_pull(Pull::Up);
-        let r: &AtomicU32 = unsafe { &*(&(*pac::GPIO::ptr()).direction as *const _ as *const _) };
-        u32_atomic_set_bit(r, false, GPIO::INDEX as usize);
+        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIO::ptr()).direction as *const _ as *mut _) };
+        u32_set_bit(r, false, GPIO::INDEX as usize);
         Gpio { gpio: self.gpio, pin: self.pin, _mode: PhantomData }
     }
 
     pub fn into_pull_down_input(mut self) -> Gpio<GPIO, PIN, Input<PullDown>> {
         self.pin.set_io_pull(Pull::Down);
-        let r: &AtomicU32 = unsafe { &*(&(*pac::GPIO::ptr()).direction as *const _ as *const _) };
-        u32_atomic_set_bit(r, false, GPIO::INDEX as usize);
+        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIO::ptr()).direction as *const _ as *mut _) };
+        u32_set_bit(r, false, GPIO::INDEX as usize);
         Gpio { gpio: self.gpio, pin: self.pin, _mode: PhantomData }
     }
 
     pub fn into_push_pull_output(mut self) -> Gpio<GPIO, PIN, Output> {
         self.pin.set_io_pull(Pull::Down);
-        let r: &AtomicU32 = unsafe { &*(&(*pac::GPIO::ptr()).direction as *const _ as *const _) };
-        u32_atomic_set_bit(r, true, GPIO::INDEX as usize);
+        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIO::ptr()).direction as *const _ as *mut _) };
+        u32_set_bit(r, true, GPIO::INDEX as usize);
         Gpio { gpio: self.gpio, pin: self.pin, _mode: PhantomData }
     }
 }
@@ -170,14 +169,14 @@ impl<GPIO: GpioIndex, PIN> OutputPin for Gpio<GPIO, PIN, Output> {
     type Error = core::convert::Infallible;
 
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        let r: &AtomicU32 = unsafe { &*(&(*pac::GPIO::ptr()).data_output as *const _ as *const _) };
-        u32_atomic_set_bit(r, true, GPIO::INDEX as usize);
+        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIO::ptr()).data_output as *const _ as *mut _) };
+        u32_set_bit(r, true, GPIO::INDEX as usize);
         Ok(())
     }
 
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        let r: &AtomicU32 = unsafe { &*(&(*pac::GPIO::ptr()).data_output as *const _ as *const _) };
-        u32_atomic_set_bit(r, false, GPIO::INDEX as usize);
+        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIO::ptr()).data_output as *const _ as *mut _) };
+        u32_set_bit(r, false, GPIO::INDEX as usize);
         Ok(())
     }
 }
@@ -196,14 +195,14 @@ impl<GPIO: GpioIndex, PIN> StatefulOutputPin for Gpio<GPIO, PIN, Output> {
 
 // todo: fix atomic operation
 
-// impl<GPIO: GpioIndex, PIN> ToggleableOutputPin for Gpio<GPIO, PIN, Output> {
-//     type Error = core::convert::Infallible;
+impl<GPIO: GpioIndex, PIN> ToggleableOutputPin for Gpio<GPIO, PIN, Output> {
+    type Error = core::convert::Infallible;
 
-//     fn toggle(&mut self) -> Result<(), Self::Error> { 
-//         let r: &AtomicU32 = unsafe { &*(&(*pac::GPIO::ptr()).data_output as *const _ as *const _) };
-//         u32_atomic_toggle_bit(r, GPIO::INDEX as usize);
-//         Ok(())
-//     }
-// }
+    fn toggle(&mut self) -> Result<(), Self::Error> { 
+        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIO::ptr()).data_output as *const _ as *mut _) };
+        u32_toggle_bit(r, GPIO::INDEX as usize);
+        Ok(())
+    }
+}
 
-impl<GPIO: GpioIndex, PIN> embedded_hal::digital::v2::toggleable::Default for Gpio<GPIO, PIN, Output> {}
+// impl<GPIO: GpioIndex, PIN> embedded_hal::digital::v2::toggleable::Default for Gpio<GPIO, PIN, Output> {}
