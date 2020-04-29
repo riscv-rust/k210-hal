@@ -5,7 +5,7 @@ use crate::fpioa::Mode;
 use core::mem::transmute;
 use core::marker::PhantomData;
 use crate::bit_utils::{u32_set_bit, u32_toggle_bit, u32_bit_is_set, u32_bit_is_clear};
-use embedded_hal::digital::v2::InputPin;
+use embedded_hal::digital::v2::{InputPin, OutputPin};
 
 pub trait GpiohsIndex {
     type FUNC;
@@ -85,14 +85,15 @@ pub struct Input<MODE>(MODE);
 
 pub struct PullUp;
 
+/// Output mode (type state)
+pub struct Output<MODE>(MODE);
+
 pub trait GpiohsExt {
-    // todo: use &mut APB0
     fn split(self) -> Parts;
 }
 
 impl GpiohsExt for pac::GPIOHS {
     fn split(self) -> Parts {
-        // todo: enable clock
         Parts { 
             gpiohs0: GPIOHS0 { _ownership: () },
         }
@@ -152,6 +153,7 @@ impl<GPIOHS: GpiohsIndex, PIN: IoPin, MODE> Gpiohs<GPIOHS, PIN, MODE> {
         }
         Gpiohs { gpiohs: self.gpiohs, pin: self.pin, _mode: PhantomData }
     }
+
     // todo: all modes
 }
 
@@ -159,16 +161,28 @@ impl<GPIOHS: GpiohsIndex, PIN, MODE> InputPin for Gpiohs<GPIOHS, PIN, Input<MODE
     type Error = core::convert::Infallible;
 
     fn is_high(&self) -> Result<bool, Self::Error> { 
-        Ok(unsafe { 
-            ((*pac::GPIOHS::ptr()).input_val.read().bits()
-            & (1 << GPIOHS::INDEX as usize)) != 0
-        } )
+        let r = &unsafe { &*pac::GPIOHS::ptr() }.input_val.read().bits();
+        Ok(u32_bit_is_set(r, GPIOHS::INDEX as usize))
     }
 
     fn is_low(&self) -> Result<bool, Self::Error> { 
-        Ok(unsafe { 
-            ((*pac::GPIOHS::ptr()).input_val.read().bits()
-            & (1 << GPIOHS::INDEX as usize)) == 0
-        } )
+        let r = &unsafe { &*pac::GPIOHS::ptr() }.input_val.read().bits();
+        Ok(u32_bit_is_clear(r, GPIOHS::INDEX as usize))
+    }
+}
+
+impl<GPIOHS: GpiohsIndex, PIN, MODE> OutputPin for Gpiohs<GPIOHS, PIN, Output<MODE>> {
+    type Error = core::convert::Infallible;
+
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIOHS::ptr()).output_val as *const _ as *mut _) };
+        u32_set_bit(r, true, GPIOHS::INDEX as usize);
+        Ok(())
+    }
+
+    fn set_low(&mut self) -> Result<(), Self::Error> {
+        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIOHS::ptr()).output_val as *const _ as *mut _) };
+        u32_set_bit(r, false, GPIOHS::INDEX as usize);
+        Ok(())
     }
 }
