@@ -1,14 +1,9 @@
-name: Rust Build
-
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
+name: Cross Compile
 
 jobs:
   build:
-    name: Rust build
+    name: Build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
