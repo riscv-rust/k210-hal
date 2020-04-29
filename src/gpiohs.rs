@@ -2,7 +2,6 @@
 
 use crate::pac;
 use crate::fpioa::Mode;
-use core::mem::transmute;
 use core::marker::PhantomData;
 use crate::bit_utils::{u32_set_bit, u32_toggle_bit, u32_bit_is_set, u32_bit_is_clear};
 use embedded_hal::digital::v2::{InputPin, OutputPin};
@@ -17,7 +16,7 @@ trait GpiohsAccess {
 
     fn set_drive(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &mut u32 = unsafe { transmute(&mut p.drive) };
+        let r: &mut u32 = unsafe { &mut *(&mut p.drive as *mut _ as *mut _) };
         u32_set_bit(r, bit, index);
     }
 
@@ -28,49 +27,49 @@ trait GpiohsAccess {
 
     fn set_input_en(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &mut u32 = unsafe { transmute(&mut p.input_en) };
+        let r: &mut u32 = unsafe { &mut *(&mut p.input_en as *mut _ as *mut _) };
         u32_set_bit(r, bit, index);
     }
 
     fn set_iof_en(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &mut u32 = unsafe { transmute(&mut p.iof_en) };
+        let r: &mut u32 = unsafe { &mut *(&mut p.iof_en as *mut _ as *mut _) };
         u32_set_bit(r, bit, index);
     }
 
     fn set_iof_sel(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &mut u32 = unsafe { transmute(&mut p.iof_sel) };
+        let r: &mut u32 = unsafe { &mut *(&mut p.iof_sel as *mut _ as *mut _) };
         u32_set_bit(r, bit, index);
     }
 
     fn set_output_en(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &mut u32 = unsafe { transmute(&mut p.output_en) };
+        let r: &mut u32 = unsafe { &mut *(&mut p.output_en as *mut _ as *mut _) };
         u32_set_bit(r, bit, index);
     }
 
     fn set_output_value(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &mut u32 = unsafe { transmute(&mut p.output_val) };
+        let r: &mut u32 = unsafe { &mut *(&mut p.output_val as *mut _ as *mut _) };
         u32_set_bit(r, bit, index);
     }
 
     fn set_output_xor(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &mut u32 = unsafe { transmute(&mut p.output_xor) };
+        let r: &mut u32 = unsafe { &mut *(&mut p.output_xor as *mut _ as *mut _) };
         u32_set_bit(r, bit, index);
     }
 
     fn toggle_pin(index: usize) {
         let p = Self::peripheral();
-        let r: &mut u32 = unsafe { transmute(&mut p.output_val) };
+        let r: &mut u32 = unsafe { &mut *(&mut p.output_val as *mut _ as *mut _) };
         u32_toggle_bit(r, index);
     }
 
     fn set_pullup_en(index: usize, bit: bool) {
         let p = Self::peripheral();
-        let r: &mut u32 = unsafe { transmute(&mut p.pullup_en) };
+        let r: &mut u32 = unsafe { &mut *(&mut p.pullup_en as *mut _ as *mut _) };
         u32_set_bit(r, bit, index);
     }
 

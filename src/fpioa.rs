@@ -169,7 +169,7 @@ def_io_pin! {
 }
 
 /** Defaults per function (from Kendryte fpioa.c) */
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static FUNCTION_DEFAULTS: &[u32] = &[
     0x00900000, 0x00900001, 0x00900002, 0x00001f03, 0x00b03f04, 0x00b03f05, 0x00b03f06, 0x00b03f07,
     0x00b03f08, 0x00b03f09, 0x00b03f0a, 0x00b03f0b, 0x00001f0c, 0x00001f0d, 0x00001f0e, 0x00001f0f,
