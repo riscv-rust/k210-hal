@@ -12,6 +12,7 @@
 */
 
 use crate::pac::FPIOA;
+use crate::sysctl::{self, APB0};
 use core::marker::PhantomData;
 
 /// FPIOA function
@@ -54,15 +55,19 @@ pub trait FpioaExt {
     /// Splits the FPIOA block into independent pins and registers
     ///
     /// todo: split sysctl into two apb's, then use the APB0 to split Fpioa
-    fn split(self) -> Parts;
+    fn split(self, apb0: &mut APB0) -> Parts;
 }
 
 /// All I/O pins
 macro_rules! def_io_pin {
     ($($IoX: ident: ($id: expr, $iox: ident, $func: ident);)+) => {
 impl FpioaExt for FPIOA {
-    fn split(self) -> Parts {
-        // todo: use APB0 to enable fpioa clock (ref: sysctl.c)
+    fn split(self, apb0: &mut APB0) -> Parts {
+        // enable APB0 bus
+        apb0.enable();
+        // enable sysctl peripheral
+        sysctl::clk_en_peri().modify(|_r, w| w.fpioa_clk_en().set_bit());
+        // return ownership
         Parts {
             $( $iox: $IoX { _function: PhantomData }, )+
         }

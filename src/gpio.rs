@@ -2,6 +2,7 @@
 
 use core::marker::PhantomData;
 use crate::pac;
+use crate::sysctl::{self, APB0};
 use crate::fpioa::{IoPin, Pull, Mode};
 use crate::bit_utils::{u32_set_bit, u32_toggle_bit, u32_bit_is_set, u32_bit_is_clear};
 use embedded_hal::digital::v2::{OutputPin, StatefulOutputPin, InputPin, ToggleableOutputPin};
@@ -9,17 +10,19 @@ use embedded_hal::digital::v2::{OutputPin, StatefulOutputPin, InputPin, Toggleab
 /// Extension trait to split a GPIO peripheral into independent pins
 pub trait GpioExt {
     /// Split the GPIO peripheral into parts
-    /// 
-    /// todo: require ownership of sysctl part
-    fn split(self) -> Parts;
+    fn split(self, apb0: &mut APB0) -> Parts;
 }
 
 macro_rules! def_gpio_pins {
     ($($GPIOX: ident: ($num: expr, $gpiox: ident, $func: ident);)+) => {
         
 impl GpioExt for pac::GPIO {
-    fn split(self) -> Parts {
-        // todo: use sysctl part to enable clock
+    fn split(self, apb0: &mut APB0) -> Parts {
+        // enable APB0 bus
+        apb0.enable();
+        // enable sysctl peripheral
+        sysctl::clk_en_peri().modify(|_r, w| w.gpio_clk_en().set_bit());
+        // return ownership
         Parts { 
             $( $gpiox: $GPIOX { _ownership: () }, )+
         }
