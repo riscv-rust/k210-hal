@@ -36,28 +36,28 @@ pub mod prelude {
 
 mod bit_utils {
     #[inline(always)]
-    pub(crate) fn u32_set_bit(r: &mut u32, is_one: bool, index: usize) {
+    pub(crate) unsafe fn u32_set_bit(p: *mut u32, bit: bool, index: usize) {
         let mask = 1 << index;
-        if is_one {
-            *r |= mask;
+        if bit {
+            *p |= mask;
         } else {
-            *r &= !mask;
+            *p &= !mask;
         }
     }
 
     #[inline(always)]
-    pub(crate) fn u32_toggle_bit(r: &mut u32, index: usize) {
+    pub(crate) unsafe fn u32_toggle_bit(p: *mut u32, index: usize) {
         let mask = 1 << index;
-        *r ^= mask;
+        *p ^= mask;
     }
 
     #[inline(always)]
-    pub(crate) fn u32_bit_is_set(r: &u32, index: usize) -> bool {
-        (r & 1 << index) != 0
+    pub(crate) unsafe fn u32_bit_is_set(r: *const u32, index: usize) -> bool {
+        (*r & 1 << index) != 0
     }
 
     #[inline(always)]
-    pub(crate) fn u32_bit_is_clear(r: &u32, index: usize) -> bool {
-        (r & 1 << index) == 0
+    pub(crate) unsafe fn u32_bit_is_clear(r: *const u32, index: usize) -> bool {
+        (*r & 1 << index) == 0
     }
 }

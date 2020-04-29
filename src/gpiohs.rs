@@ -15,62 +15,73 @@ trait GpiohsAccess {
     fn peripheral() -> &'static mut pac::gpiohs::RegisterBlock;
 
     fn set_drive(index: usize, bit: bool) {
-        let p = Self::peripheral();
-        let r: &mut u32 = unsafe { &mut *(&mut p.drive as *mut _ as *mut _) };
-        u32_set_bit(r, bit, index);
+        unsafe { 
+            let p = &mut Self::peripheral().drive as *mut _ as *mut _; 
+            u32_set_bit(p, bit, index);
+        }
     }
 
     fn input_value(index: usize) -> bool {
-        let p = Self::peripheral();
-        (p.input_val.read().bits() >> (index & 31) & 1) != 0
+        unsafe { 
+            let p = &mut Self::peripheral().input_val as *mut _ as *mut _; 
+            u32_bit_is_set(p, index)
+        }
     }
 
     fn set_input_en(index: usize, bit: bool) {
-        let p = Self::peripheral();
-        let r: &mut u32 = unsafe { &mut *(&mut p.input_en as *mut _ as *mut _) };
-        u32_set_bit(r, bit, index);
+        unsafe { 
+            let p = &mut Self::peripheral().input_en as *mut _ as *mut _; 
+            u32_set_bit(p, bit, index);
+        }
     }
 
     fn set_iof_en(index: usize, bit: bool) {
-        let p = Self::peripheral();
-        let r: &mut u32 = unsafe { &mut *(&mut p.iof_en as *mut _ as *mut _) };
-        u32_set_bit(r, bit, index);
+        unsafe { 
+            let p = &mut Self::peripheral().iof_en as *mut _ as *mut _; 
+            u32_set_bit(p, bit, index);
+        }
     }
 
     fn set_iof_sel(index: usize, bit: bool) {
-        let p = Self::peripheral();
-        let r: &mut u32 = unsafe { &mut *(&mut p.iof_sel as *mut _ as *mut _) };
-        u32_set_bit(r, bit, index);
+        unsafe { 
+            let p = &mut Self::peripheral().iof_sel as *mut _ as *mut _; 
+            u32_set_bit(p, bit, index);
+        }
     }
 
     fn set_output_en(index: usize, bit: bool) {
-        let p = Self::peripheral();
-        let r: &mut u32 = unsafe { &mut *(&mut p.output_en as *mut _ as *mut _) };
-        u32_set_bit(r, bit, index);
+        unsafe { 
+            let p = &mut Self::peripheral().output_en as *mut _ as *mut _; 
+            u32_set_bit(p, bit, index);
+        }
     }
 
     fn set_output_value(index: usize, bit: bool) {
-        let p = Self::peripheral();
-        let r: &mut u32 = unsafe { &mut *(&mut p.output_val as *mut _ as *mut _) };
-        u32_set_bit(r, bit, index);
+        unsafe { 
+            let p = &mut Self::peripheral().output_val as *mut _ as *mut _; 
+            u32_set_bit(p, bit, index);
+        }
     }
 
     fn set_output_xor(index: usize, bit: bool) {
-        let p = Self::peripheral();
-        let r: &mut u32 = unsafe { &mut *(&mut p.output_xor as *mut _ as *mut _) };
-        u32_set_bit(r, bit, index);
+        unsafe { 
+            let p = &mut Self::peripheral().output_xor as *mut _ as *mut _; 
+            u32_set_bit(p, bit, index);
+        }
     }
 
     fn toggle_pin(index: usize) {
-        let p = Self::peripheral();
-        let r: &mut u32 = unsafe { &mut *(&mut p.output_val as *mut _ as *mut _) };
-        u32_toggle_bit(r, index);
+        unsafe { 
+            let p = &mut Self::peripheral().output_val as *mut _ as *mut _; 
+            u32_toggle_bit(p, index);
+        }
     }
 
     fn set_pullup_en(index: usize, bit: bool) {
-        let p = Self::peripheral();
-        let r: &mut u32 = unsafe { &mut *(&mut p.pullup_en as *mut _ as *mut _) };
-        u32_set_bit(r, bit, index);
+        unsafe { 
+            let p = &mut Self::peripheral().pullup_en as *mut _ as *mut _; 
+            u32_set_bit(p, bit, index);
+        }
     }
 
     // todo: {high, low, fall, rise}_{ie, ip}
@@ -160,13 +171,17 @@ impl<GPIOHS: GpiohsIndex, PIN, MODE> InputPin for Gpiohs<GPIOHS, PIN, Input<MODE
     type Error = core::convert::Infallible;
 
     fn is_high(&self) -> Result<bool, Self::Error> { 
-        let r = &unsafe { &*pac::GPIOHS::ptr() }.input_val.read().bits();
-        Ok(u32_bit_is_set(r, GPIOHS::INDEX as usize))
+        Ok(unsafe { 
+            let p = &(*pac::GPIOHS::ptr()).input_val as *const _ as *const _;
+            u32_bit_is_set(p, GPIOHS::INDEX as usize)
+        })
     }
 
     fn is_low(&self) -> Result<bool, Self::Error> { 
-        let r = &unsafe { &*pac::GPIOHS::ptr() }.input_val.read().bits();
-        Ok(u32_bit_is_clear(r, GPIOHS::INDEX as usize))
+        Ok(unsafe { 
+            let p = &(*pac::GPIOHS::ptr()).input_val as *const _ as *const _;
+            u32_bit_is_clear(p, GPIOHS::INDEX as usize)
+        })
     }
 }
 
@@ -174,14 +189,18 @@ impl<GPIOHS: GpiohsIndex, PIN, MODE> OutputPin for Gpiohs<GPIOHS, PIN, Output<MO
     type Error = core::convert::Infallible;
 
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIOHS::ptr()).output_val as *const _ as *mut _) };
-        u32_set_bit(r, true, GPIOHS::INDEX as usize);
+        unsafe { 
+            let p = &(*pac::GPIOHS::ptr()).output_val as *const _ as *mut _;
+            u32_set_bit(p, true, GPIOHS::INDEX as usize);
+        }
         Ok(())
     }
 
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIOHS::ptr()).output_val as *const _ as *mut _) };
-        u32_set_bit(r, false, GPIOHS::INDEX as usize);
+        unsafe { 
+            let p = &(*pac::GPIOHS::ptr()).output_val as *const _ as *mut _;
+            u32_set_bit(p, false, GPIOHS::INDEX as usize);
+        }
         Ok(())
     }
 }

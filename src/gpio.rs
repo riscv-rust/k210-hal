@@ -152,18 +152,16 @@ impl<GPIO: GpioIndex, PIN: IoPin, MODE: Active> Gpio<GPIO, PIN, MODE> {
     #[inline]
     fn direction_in(&mut self) {
         unsafe { 
-            (*pac::GPIO::ptr()).direction.modify(|r, w| 
-                w.bits(r.bits() & !(1 << GPIO::INDEX as usize))
-            );
+            let p = &(*pac::GPIO::ptr()).direction as *const _ as *mut _;
+            u32_set_bit(p, false, GPIO::INDEX as usize);
         }
     }
 
     #[inline]
     fn direction_out(&mut self) {
         unsafe { 
-            (*pac::GPIO::ptr()).direction.modify(|r, w| 
-                w.bits(r.bits() | (1 << GPIO::INDEX as usize))
-            );
+            let p = &(*pac::GPIO::ptr()).direction as *const _ as *mut _;
+            u32_set_bit(p, true, GPIO::INDEX as usize);
         }
     }
 }
@@ -172,13 +170,17 @@ impl<GPIO: GpioIndex, PIN, MODE> InputPin for Gpio<GPIO, PIN, Input<MODE>> {
     type Error = core::convert::Infallible;
 
     fn is_high(&self) -> Result<bool, Self::Error> { 
-        let r: &u32 = unsafe { &*(&(*pac::GPIO::ptr()).data_input as *const _ as *const _) };
-        Ok(u32_bit_is_set(r, GPIO::INDEX as usize))
+        Ok(unsafe { 
+            let p = &(*pac::GPIO::ptr()).data_input as *const _ as *const _;
+            u32_bit_is_set(p, GPIO::INDEX as usize)
+        })
     }
 
     fn is_low(&self) -> Result<bool, Self::Error> { 
-        let r: &u32 = unsafe { &*(&(*pac::GPIO::ptr()).data_input as *const _ as *mut _) };
-        Ok(u32_bit_is_clear(r, GPIO::INDEX as usize))
+        Ok(unsafe { 
+            let p = &(*pac::GPIO::ptr()).data_input as *const _ as *const _;
+            u32_bit_is_clear(p, GPIO::INDEX as usize)
+        })
     }
 }
 
@@ -186,27 +188,35 @@ impl<GPIO: GpioIndex, PIN> OutputPin for Gpio<GPIO, PIN, Output> {
     type Error = core::convert::Infallible;
 
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIO::ptr()).data_output as *const _ as *mut _) };
-        u32_set_bit(r, true, GPIO::INDEX as usize);
+        unsafe { 
+            let p = &(*pac::GPIO::ptr()).data_output as *const _ as *mut _;
+            u32_set_bit(p, true, GPIO::INDEX as usize);
+        }
         Ok(())
     }
 
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIO::ptr()).data_output as *const _ as *mut _) };
-        u32_set_bit(r, false, GPIO::INDEX as usize);
+        unsafe { 
+            let p = &(*pac::GPIO::ptr()).data_output as *const _ as *mut _;
+            u32_set_bit(p, false, GPIO::INDEX as usize);
+        }
         Ok(())
     }
 }
 
 impl<GPIO: GpioIndex, PIN> StatefulOutputPin for Gpio<GPIO, PIN, Output> {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
-        let r: &u32 = unsafe { &*(&(*pac::GPIO::ptr()).data_output as *const _ as *const _) };
-        Ok(u32_bit_is_set(r, GPIO::INDEX as usize))
+        Ok(unsafe { 
+            let p = &(*pac::GPIO::ptr()).data_output as *const _ as *const _;
+            u32_bit_is_set(p, GPIO::INDEX as usize)
+        })
     }
 
     fn is_set_low(&self) -> Result<bool, Self::Error> { 
-        let r: &u32 = unsafe { &*(&(*pac::GPIO::ptr()).data_output as *const _ as *const _) };
-        Ok(u32_bit_is_clear(r, GPIO::INDEX as usize))
+        Ok(unsafe { 
+            let p = &(*pac::GPIO::ptr()).data_output as *const _ as *const _;
+            u32_bit_is_clear(p, GPIO::INDEX as usize)
+        })
     }
 }
 
@@ -214,8 +224,10 @@ impl<GPIO: GpioIndex, PIN> ToggleableOutputPin for Gpio<GPIO, PIN, Output> {
     type Error = core::convert::Infallible;
 
     fn toggle(&mut self) -> Result<(), Self::Error> { 
-        let r: &mut u32 = unsafe { &mut *(&(*pac::GPIO::ptr()).data_output as *const _ as *mut _) };
-        u32_toggle_bit(r, GPIO::INDEX as usize);
+        unsafe { 
+            let p = &(*pac::GPIO::ptr()).data_output as *const _ as *mut _;
+            u32_toggle_bit(p, GPIO::INDEX as usize);
+        }
         Ok(())
     }
 }
