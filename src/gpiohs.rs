@@ -87,6 +87,12 @@ trait GpiohsAccess {
     // todo: {high, low, fall, rise}_{ie, ip}
 }
 
+impl GpiohsAccess for GPIOHS0 {
+    fn peripheral() -> &'static mut pac::gpiohs::RegisterBlock {
+        unsafe { &mut *(pac::GPIOHS::ptr() as *mut _) }
+    }
+}
+
 /// Unknown mode (type state)
 pub struct Unknown;
 
@@ -146,21 +152,8 @@ use crate::fpioa::{Pull, IoPin};
 impl<GPIOHS: GpiohsIndex, PIN: IoPin, MODE> Gpiohs<GPIOHS, PIN, MODE> {
     pub fn into_pull_up_input(mut self) -> Gpiohs<GPIOHS, PIN, Input<PullUp>> {
         self.pin.set_io_pull(Pull::Up);
-        // let r: &mut u32 = unsafe { &*(&(*pac::GPIOHS::ptr()).input_en as *const _ as *const _) };
-        // u32_set_bit(r, true, GPIOHS::INDEX as usize);
-        // let r: &mut u32 = unsafe { &*(&(*pac::GPIOHS::ptr()).output_en as *const _ as *const _) };
-        // u32_set_bit(r, false, GPIOHS::INDEX as usize);
-        unsafe {
-            let ptr = pac::GPIOHS::ptr();
-            (*ptr)
-                .output_en
-                .modify(|r, w| 
-                    w.bits(r.bits() & !(1 << (GPIOHS::INDEX as usize))));
-            (*ptr)
-                .input_en
-                .modify(|r, w| 
-                    w.bits(r.bits() | (1 << (GPIOHS::INDEX as usize))));
-        }
+        GPIOHS0::set_output_en(GPIOHS::INDEX as usize, false);
+        GPIOHS0::set_input_en(GPIOHS::INDEX as usize, true);
         Gpiohs { gpiohs: self.gpiohs, pin: self.pin, _mode: PhantomData }
     }
 
