@@ -12,6 +12,7 @@ pub mod fpioa;
 pub mod gpio;
 pub mod gpiohs;
 pub mod serial;
+pub mod sha256;
 pub mod stdout;
 pub mod sysctl;
 pub mod time;

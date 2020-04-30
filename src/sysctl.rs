@@ -14,6 +14,10 @@ pub(crate) fn clk_en_peri<'a>() -> &'a sysctl::CLK_EN_PERI {
     &sysctl().clk_en_peri
 }
 
+pub(crate) fn peri_reset<'a>() -> &'a sysctl::PERI_RESET {
+    &sysctl().peri_reset
+}
+
 pub trait SysctlExt {
     fn constrain(self) -> Parts;
 }
