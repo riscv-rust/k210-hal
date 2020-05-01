@@ -40,7 +40,7 @@ impl Digest {
         todo!()
     }
 
-    pub fn finish(&self, out: &mut [u8]) {
+    pub fn finish(&self, out: &mut [u8; 32]) {
         todo!()
     }
 
