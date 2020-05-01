@@ -1,7 +1,6 @@
 use core::marker::PhantomData;
 use crate::pac::AES;
 
-#[allow(unused)] // todo: remove
 pub struct Aes<MODE, KLEN> {
     aes: AES,
     _mode: PhantomData<MODE>,
@@ -56,6 +55,13 @@ impl<MODE, KLEN> Aes<MODE, KLEN> {
 
     pub fn gcm256(aes: AES) -> Aes<Gcm, K256> {
         todo!()
+    }
+}
+
+impl<MODE, KLEN> Aes<MODE, KLEN> {
+    // todo: clock
+    pub fn free(self) -> AES {
+        self.aes
     }
 }
 
