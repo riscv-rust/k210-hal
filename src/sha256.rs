@@ -36,7 +36,7 @@ pub struct Digest {
 }
 
 impl Digest {
-    pub fn write(&mut self, buf: &[u8]) {
+    pub fn write_u32(&mut self, n: u32) {
         todo!()
     }
 

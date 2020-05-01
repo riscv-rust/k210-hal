@@ -7,6 +7,7 @@
 
 pub use k210_pac as pac;
 
+pub mod aes;
 pub mod clock;
 pub mod fpioa;
 pub mod gpio;
