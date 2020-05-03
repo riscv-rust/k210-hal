@@ -8,11 +8,15 @@
 pub use k210_pac as pac;
 
 pub mod aes;
+pub mod apu;
 pub mod clint;
 pub mod clock;
+pub mod dmac;
+pub mod fft;
 pub mod fpioa;
 pub mod gpio;
 pub mod gpiohs;
+pub mod plic;
 pub mod serial;
 pub mod sha256;
 pub mod stdout;
