@@ -37,10 +37,12 @@ pub struct Digest {
 
 impl Digest {
     pub fn write_u32(&mut self, n: u32) {
+        let _todo = n;
         todo!()
     }
 
     pub fn finish(&self, out: &mut [u8; 32]) {
+        let _todo = out;
         todo!()
     }
 
