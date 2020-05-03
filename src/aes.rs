@@ -1,3 +1,4 @@
+//! (TODO) Hardware AES calculator (AES)
 use core::marker::PhantomData;
 use crate::pac::AES;
 
