@@ -73,6 +73,23 @@ impl<MODE> Gpiohs0<MODE> {
         GPIOHS::set_low_ie(0, edge.contains(Edge::LOW));
     }
 
+    pub fn check_edges(&self) -> Edge {
+        let mut ans = Edge::empty();
+        if GPIOHS::has_rise_ip(0) {
+            ans |= Edge::RISING;
+        }
+        if GPIOHS::has_fall_ip(0) {
+            ans |= Edge::FALLING;
+        }
+        if GPIOHS::has_high_ip(0) {
+            ans |= Edge::HIGH;
+        }
+        if GPIOHS::has_low_ip(0) {
+            ans |= Edge::LOW;
+        }
+        ans
+    }
+
     pub fn clear_interrupt_pending_bits(&mut self) {
         if GPIOHS::has_rise_ie(0) {
             GPIOHS::set_rise_ie(0, false);
@@ -288,6 +305,34 @@ trait GpiohsAccess {
     fn has_low_ie(index: usize) -> bool {
         unsafe {
             let p = &mut Self::peripheral().low_ie as *mut _ as *mut _; 
+            u32_bit_is_set(p, index)
+        }
+    }
+
+    fn has_rise_ip(index: usize) -> bool {
+        unsafe {
+            let p = &mut Self::peripheral().rise_ip as *mut _ as *mut _; 
+            u32_bit_is_set(p, index)
+        }
+    }
+
+    fn has_fall_ip(index: usize) -> bool {
+        unsafe {
+            let p = &mut Self::peripheral().fall_ip as *mut _ as *mut _; 
+            u32_bit_is_set(p, index)
+        }
+    }
+
+    fn has_high_ip(index: usize) -> bool {
+        unsafe {
+            let p = &mut Self::peripheral().high_ip as *mut _ as *mut _; 
+            u32_bit_is_set(p, index)
+        }
+    }
+
+    fn has_low_ip(index: usize) -> bool {
+        unsafe {
+            let p = &mut Self::peripheral().low_ip as *mut _ as *mut _; 
             u32_bit_is_set(p, index)
         }
     }
