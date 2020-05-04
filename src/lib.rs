@@ -39,6 +39,7 @@ pub mod prelude {
     pub use crate::sysctl::SysctlExt as _k210_hal_sysctl_SysctlExt;
     pub use crate::gpio::GpioExt as _k210_hal_gpio_GpioExt;
     pub use crate::gpiohs::GpiohsExt as _k210_hal_gpiohs_GpiohsExt;
+    pub use crate::plic::PlicExt as _k210_hal_plic_PlicExt;
 }
 
 mod bit_utils {
