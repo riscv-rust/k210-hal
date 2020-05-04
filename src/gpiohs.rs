@@ -1,15 +1,9 @@
 //! High-speed GPIO peripheral (GPIOHS)
 
 use crate::pac;
-use crate::fpioa::Mode;
 use core::marker::PhantomData;
 use crate::bit_utils::{u32_set_bit, u32_toggle_bit, u32_bit_is_set, u32_bit_is_clear};
 use embedded_hal::digital::v2::{InputPin, OutputPin};
-
-pub trait GpiohsIndex {
-    type FUNC;
-    const INDEX: u8;
-}
 
 trait GpiohsAccess {
     fn peripheral() -> &'static mut pac::gpiohs::RegisterBlock;
@@ -87,19 +81,22 @@ trait GpiohsAccess {
     // todo: {high, low, fall, rise}_{ie, ip}
 }
 
-impl GpiohsAccess for GPIOHS0 {
+impl GpiohsAccess for pac::GPIOHS {
     fn peripheral() -> &'static mut pac::gpiohs::RegisterBlock {
         unsafe { &mut *(pac::GPIOHS::ptr() as *mut _) }
     }
 }
 
-/// Unknown mode (type state)
-pub struct Unknown;
+// todo: verify
+
+/// Floating mode (type state)
+pub struct Floating;
+
+/// PullUp mode (type state)
+pub struct PullUp;
 
 /// Input mode (type state)
 pub struct Input<MODE>(MODE);
-
-pub struct PullUp;
 
 /// Output mode (type state)
 pub struct Output<MODE>(MODE);
@@ -111,80 +108,55 @@ pub trait GpiohsExt {
 impl GpiohsExt for pac::GPIOHS {
     fn split(self) -> Parts {
         Parts { 
-            gpiohs0: GPIOHS0 { _ownership: () },
+            gpiohs0: Gpiohs0 { _mode: PhantomData },
         }
     }
 }
 
 pub struct Parts {
-    pub gpiohs0: GPIOHS0,
+    pub gpiohs0: Gpiohs0<Input<Floating>>,
 }
 
-pub struct GPIOHS0 {
-    _ownership: (),
-}
-
-impl GpiohsIndex for GPIOHS0 {
-    type FUNC = crate::fpioa::functions::GPIOHS0;
-    const INDEX: u8 = 0;
-}
-
-pub struct Gpiohs<GPIOHS, PIN, MODE> {
-    gpiohs: GPIOHS,
-    pin: PIN,
+pub struct Gpiohs0<MODE> {
     _mode: PhantomData<MODE>,
 }
 
-impl<GPIOHS: GpiohsIndex, PIN: Mode<GPIOHS::FUNC>> Gpiohs<GPIOHS, PIN, Unknown> {
-    pub fn new(gpiohs: GPIOHS, pin: PIN) -> Gpiohs<GPIOHS, PIN, Unknown> {
-        Gpiohs { gpiohs, pin, _mode: PhantomData }
-    }
-}
-
-impl<GPIOHS, PIN, MODE> Gpiohs<GPIOHS, PIN, MODE> {
-    pub fn free(self) -> (GPIOHS, PIN) {
-        (self.gpiohs, self.pin)
-    }
-}
-
-use crate::fpioa::{Pull, IoPin};
-
-impl<GPIOHS: GpiohsIndex, PIN: IoPin, MODE> Gpiohs<GPIOHS, PIN, MODE> {
-    pub fn into_pull_up_input(mut self) -> Gpiohs<GPIOHS, PIN, Input<PullUp>> {
-        self.pin.set_io_pull(Pull::Up);
-        GPIOHS0::set_output_en(GPIOHS::INDEX as usize, false);
-        GPIOHS0::set_input_en(GPIOHS::INDEX as usize, true);
-        Gpiohs { gpiohs: self.gpiohs, pin: self.pin, _mode: PhantomData }
+impl<MODE> Gpiohs0<MODE> {
+    pub fn into_pull_up_input(self) -> Gpiohs0<Input<PullUp>> {
+        pac::GPIOHS::set_output_en(0, false);
+        pac::GPIOHS::set_input_en(0, true);
+        pac::GPIOHS::set_pullup_en(0, true);
+        Gpiohs0 { _mode: PhantomData }
     }
 
     // todo: all modes
 }
 
-impl<GPIOHS: GpiohsIndex, PIN, MODE> InputPin for Gpiohs<GPIOHS, PIN, Input<MODE>> {
+impl<MODE> InputPin for Gpiohs0<Input<MODE>> {
     type Error = core::convert::Infallible;
 
     fn is_high(&self) -> Result<bool, Self::Error> { 
         Ok(unsafe { 
             let p = &(*pac::GPIOHS::ptr()).input_val as *const _ as *const _;
-            u32_bit_is_set(p, GPIOHS::INDEX as usize)
+            u32_bit_is_set(p, 0)
         })
     }
 
     fn is_low(&self) -> Result<bool, Self::Error> { 
         Ok(unsafe { 
             let p = &(*pac::GPIOHS::ptr()).input_val as *const _ as *const _;
-            u32_bit_is_clear(p, GPIOHS::INDEX as usize)
+            u32_bit_is_clear(p, 0)
         })
     }
 }
 
-impl<GPIOHS: GpiohsIndex, PIN, MODE> OutputPin for Gpiohs<GPIOHS, PIN, Output<MODE>> {
+impl<MODE> OutputPin for Gpiohs0<Output<MODE>> {
     type Error = core::convert::Infallible;
 
     fn set_high(&mut self) -> Result<(), Self::Error> {
         unsafe { 
             let p = &(*pac::GPIOHS::ptr()).output_val as *const _ as *mut _;
-            u32_set_bit(p, true, GPIOHS::INDEX as usize);
+            u32_set_bit(p, true, 0);
         }
         Ok(())
     }
@@ -192,7 +164,7 @@ impl<GPIOHS: GpiohsIndex, PIN, MODE> OutputPin for Gpiohs<GPIOHS, PIN, Output<MO
     fn set_low(&mut self) -> Result<(), Self::Error> {
         unsafe { 
             let p = &(*pac::GPIOHS::ptr()).output_val as *const _ as *mut _;
-            u32_set_bit(p, false, GPIOHS::INDEX as usize);
+            u32_set_bit(p, false, 0);
         }
         Ok(())
     }
