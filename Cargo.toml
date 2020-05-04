@@ -13,3 +13,4 @@ edition = "2018"
 embedded-hal = { version = "0.2.3", features = ["unproven"] }
 nb = "0.1.1"
 k210-pac = "0.2.0"
+bitflags = "1.2.1"
