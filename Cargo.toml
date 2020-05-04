@@ -9,6 +9,9 @@ keywords = ["riscv", "k210", "hal"]
 license = "ISC"
 edition = "2018"
 
+[package.metadata.docs.rs]
+targets = ["riscv64gc-unknown-none-elf"]
+
 [dependencies]
 embedded-hal = { version = "0.2.3", features = ["unproven"] }
 nb = "0.1.1"
