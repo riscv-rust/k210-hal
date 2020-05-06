@@ -15,25 +15,25 @@ pub trait PlicExt {
     /// Interrupt wrapper type
     type Interrupt;
     /// Is this M-Mode interrupt enabled on given hart?
-    fn is_enabled(hart_id: usize, interrupt: Interrupt) -> bool;
+    fn is_enabled(hart_id: usize, interrupt: Self::Interrupt) -> bool;
     /// Enable an interrupt for a given hart
-    fn enable(hart_id: usize, interrupt: Interrupt);
+    fn enable(hart_id: usize, interrupt: Self::Interrupt);
     /// Disable an interrupt for a given hart
-    fn disable(hart_id: usize, interrupt: Interrupt);
+    fn disable(hart_id: usize, interrupt: Self::Interrupt);
     /// Get global priority for one interrupt
-    fn get_priority(interrupt: Interrupt) -> Priority;
+    fn get_priority(interrupt: Self::Interrupt) -> Priority;
     /// Globally set priority for one interrupt
-    unsafe fn set_priority(interrupt: Interrupt, prio: Priority);
+    unsafe fn set_priority(interrupt: Self::Interrupt, prio: Priority);
     /// Get priority threshold for a given hart
     fn get_threshold(hart_id: usize) -> Priority;
     /// Set the priority threshold for a given hart
     unsafe fn set_threshold(hart_id: usize, threshold: Priority);
     /// Mark that given hart have claimed to handle this interrupt
-    fn claim(hart_id: usize) -> Option<Interrupt>;
+    fn claim(hart_id: usize) -> Option<Self::Interrupt>;
     /// Mark that given hart have completed handling this interrupt
-    fn complete(hart_id: usize, interrupt: Interrupt);
+    fn complete(hart_id: usize, interrupt: Self::Interrupt);
     /// Is this interrupt claimed and under procceeding? 
-    fn is_pending(interrupt: Interrupt) -> bool;
+    fn is_pending(interrupt: Self::Interrupt) -> bool;
 }
 
 impl PlicExt for PLIC {
