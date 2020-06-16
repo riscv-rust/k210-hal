@@ -77,5 +77,14 @@ impl<T> Uncache for *mut T {
 
 #[inline]
 fn assert_addr_cached(addr: usize) {
-    assert!(addr <= 0x805F_FFFF && addr >= 0x8000_0000);
+    /*
+        SRAM memory: 0x8000_0000 to 0x805F_FFFF
+        AI memory:   0x8060_0000 to 0x807F_FFFF
+        SRAM memory includes two parts: MEM0 and MEM1
+        MEM0 memory: 0x8000_0000 to 0x803F_FFFF
+        MEM1 memory: 0x8040_0000 to 0x805F_FFFF
+    */
+    // assure that memory is within SRAM or AI 
+    // todo: should we exclude AI?
+    assert!(addr <= 0x807F_FFFF && addr >= 0x8000_0000);
 }
