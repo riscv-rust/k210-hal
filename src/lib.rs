@@ -9,6 +9,7 @@ pub use k210_pac as pac;
 
 pub mod aes;
 pub mod apu;
+pub mod cache;
 pub mod clint;
 pub mod clock;
 pub mod dmac;
