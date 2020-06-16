@@ -3,6 +3,7 @@
 //! Todo: verify this module!
 
 use core::slice;
+use core::str;
 
 /// Convert a buffer or a pointer into ones with uncached address.
 /// 
@@ -56,6 +57,32 @@ impl<T> Uncache for &mut [T] {
         let new_ptr = (addr - 0x4000_0000) as *mut T;
         // note(unsafe): source address is safe; passing ownership
         unsafe { slice::from_raw_parts_mut(new_ptr, self.len()) }
+    }
+}
+
+impl Uncache for &str {
+    #[inline]
+    fn uncache(self) -> Self {
+        let addr = self.as_ptr() as usize;
+        assert_addr_cached(addr);
+        let new_ptr = (addr - 0x4000_0000) as *const u8;
+        // note(unsafe): source address is safe; passing ownership
+        let slice = unsafe { slice::from_raw_parts(new_ptr, self.len()) };
+        // note(unsafe): source slice is guaranteed valid in UTF-8
+        unsafe { str::from_utf8_unchecked(slice) }
+    }
+}
+
+impl Uncache for &mut str {
+    #[inline]
+    fn uncache(self) -> Self {
+        let addr = self.as_ptr() as usize;
+        assert_addr_cached(addr);
+        let new_ptr = (addr - 0x4000_0000) as *mut u8;
+        // note(unsafe): source address is safe; passing ownership
+        let slice = unsafe { slice::from_raw_parts_mut(new_ptr, self.len()) };
+        // note(unsafe): source slice is guaranteed valid in UTF-8
+        unsafe { str::from_utf8_unchecked_mut(slice) }
     }
 }
 
