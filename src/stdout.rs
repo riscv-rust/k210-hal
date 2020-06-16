@@ -13,14 +13,14 @@ impl<'p, T> Write for Stdout<'p, T>
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         for byte in s.as_bytes() {
             if *byte == b'\n' {
-                let res = block!(self.0.write(b'\r'));
+                let res = block!(self.0.try_write(b'\r'));
 
                 if res.is_err() {
                     return Err(core::fmt::Error);
                 }
             }
 
-            let res = block!(self.0.write(*byte));
+            let res = block!(self.0.try_write(*byte));
 
             if res.is_err() {
                 return Err(core::fmt::Error);

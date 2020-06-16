@@ -27,12 +27,6 @@ pub mod time;
 /// Prelude
 pub mod prelude {
     pub use embedded_hal::prelude::*;
-    pub use embedded_hal::digital::v2::{
-        InputPin as _embedded_hal_digital_v2_InputPin,
-        OutputPin as _embedded_hal_digital_v2_OutputPin,
-        StatefulOutputPin as _embedded_hal_digital_v2_StatefulOutputPin,
-        ToggleableOutputPin as _embedded_hal_digital_v2_ToggleableOutputPin,
-    };
     pub use crate::serial::SerialExt as _k210_hal_serial_SerialExt;
     pub use crate::stdout::Write as _k210_hal_stdout_Write;
     pub use crate::time::U32Ext as _k210_hal_time_U32Ext;

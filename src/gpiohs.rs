@@ -3,7 +3,7 @@
 use crate::pac::GPIOHS;
 use core::marker::PhantomData;
 use crate::bit_utils::{u32_set_bit, u32_toggle_bit, u32_bit_is_set, u32_bit_is_clear};
-use embedded_hal::digital::v2::{InputPin, OutputPin};
+use embedded_hal::digital::{InputPin, OutputPin};
 
 // todo: verify
 
@@ -117,14 +117,14 @@ impl<MODE> Gpiohs0<MODE> {
 impl<MODE> InputPin for Gpiohs0<Input<MODE>> {
     type Error = core::convert::Infallible;
 
-    fn is_high(&self) -> Result<bool, Self::Error> { 
+    fn try_is_high(&self) -> Result<bool, Self::Error> { 
         Ok(unsafe { 
             let p = &(*GPIOHS::ptr()).input_val as *const _ as *const _;
             u32_bit_is_set(p, 0)
         })
     }
 
-    fn is_low(&self) -> Result<bool, Self::Error> { 
+    fn try_is_low(&self) -> Result<bool, Self::Error> { 
         Ok(unsafe { 
             let p = &(*GPIOHS::ptr()).input_val as *const _ as *const _;
             u32_bit_is_clear(p, 0)
@@ -135,7 +135,7 @@ impl<MODE> InputPin for Gpiohs0<Input<MODE>> {
 impl<MODE> OutputPin for Gpiohs0<Output<MODE>> {
     type Error = core::convert::Infallible;
 
-    fn set_high(&mut self) -> Result<(), Self::Error> {
+    fn try_set_high(&mut self) -> Result<(), Self::Error> {
         unsafe { 
             let p = &(*GPIOHS::ptr()).output_val as *const _ as *mut _;
             u32_set_bit(p, true, 0);
@@ -143,7 +143,7 @@ impl<MODE> OutputPin for Gpiohs0<Output<MODE>> {
         Ok(())
     }
 
-    fn set_low(&mut self) -> Result<(), Self::Error> {
+    fn try_set_low(&mut self) -> Result<(), Self::Error> {
         unsafe { 
             let p = &(*GPIOHS::ptr()).output_val as *const _ as *mut _;
             u32_set_bit(p, false, 0);
