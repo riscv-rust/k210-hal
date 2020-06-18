@@ -13,13 +13,13 @@ use crate::pac::{PLIC, Interrupt};
 /// Extension trait for PLIC interrupt controller peripheral
 pub trait PlicExt {
     /// Interrupt wrapper type
-    type Interrupt;
+    type Interrupt: Nr;
     /// Is this M-Mode interrupt enabled on given hart?
     fn is_enabled(hart_id: usize, interrupt: Self::Interrupt) -> bool;
     /// Enable an interrupt for a given hart
-    fn enable(hart_id: usize, interrupt: Self::Interrupt);
+    unsafe fn unmask(hart_id: usize, interrupt: Self::Interrupt);
     /// Disable an interrupt for a given hart
-    fn disable(hart_id: usize, interrupt: Self::Interrupt);
+    fn mask(hart_id: usize, interrupt: Self::Interrupt);
     /// Get global priority for one interrupt
     fn get_priority(interrupt: Self::Interrupt) -> Priority;
     /// Globally set priority for one interrupt
@@ -45,15 +45,13 @@ impl PlicExt for PLIC {
                 .read().bits() & 1 << (irq_number % 32) != 0
         }
     }
-    fn enable(hart_id: usize, interrupt: Interrupt) {
+    unsafe fn unmask(hart_id: usize, interrupt: Interrupt) {
         let irq_number = interrupt.into_bits() as usize;
-        unsafe {
-            (*PLIC::ptr()).target_enables[hart_id].enable[irq_number / 32]
-                .modify(|r, w| 
-                    w.bits(r.bits() | 1 << (irq_number % 32)));
-        }
+        (*PLIC::ptr()).target_enables[hart_id].enable[irq_number / 32]
+            .modify(|r, w| 
+                w.bits(r.bits() | 1 << (irq_number % 32)));
     }
-    fn disable(hart_id: usize, interrupt: Interrupt) { 
+    fn mask(hart_id: usize, interrupt: Interrupt) { 
         let irq_number = interrupt.into_bits() as usize;
         unsafe {
             (*PLIC::ptr()).target_enables[hart_id].enable[irq_number / 32]
