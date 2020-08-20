@@ -19,6 +19,7 @@ pub mod gpio;
 pub mod gpiohs;
 pub mod plic;
 pub mod serial;
+pub mod spi;
 pub mod sha256;
 pub mod stdout;
 pub mod sysctl;
