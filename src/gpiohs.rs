@@ -1,346 +1,283 @@
 //! High-speed GPIO peripheral (GPIOHS)
 
-use crate::pac::GPIOHS;
+// use crate::bit_utils::{u32_bit_is_clear, u32_bit_is_set, u32_set_bit, u32_toggle_bit};
+use crate::fpioa::{IoPin, Mode, Pull};
+use crate::pac;
 use core::marker::PhantomData;
-use crate::bit_utils::{u32_set_bit, u32_toggle_bit, u32_bit_is_set, u32_bit_is_clear};
-use embedded_hal::digital::v2::{InputPin, OutputPin};
+use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin};
 
-// todo: verify
+// reused type state
+pub use crate::gpio::{Active, Floating, Input, Output, PullDown, PullUp, Unknown};
 
-/// Floating mode (type state)
-pub struct Floating;
-
-/// PullUp mode (type state)
-pub struct PullUp;
-
-/// Input mode (type state)
-pub struct Input<MODE>(MODE);
-
-/// Output mode (type state)
-pub struct Output<MODE>(MODE);
+/// GPIOHS Index
+pub trait GpiohsIndex {
+    type FUNC;
+    const INDEX: u8;
+}
 
 pub trait GpiohsExt {
     fn split(self) -> Parts;
 }
 
-impl GpiohsExt for GPIOHS {
-    fn split(self) -> Parts {
-        Parts {
-            gpiohs0: Gpiohs0 { _mode: PhantomData },
+pub use gpiohs_pins::*;
+
+macro_rules! def_gpiohs_pins {
+    ($($GPIOHSX: ident: ($num: expr, $gpiohsx: ident, $func: ident);)+) => {
+
+        pub struct Parts {
+            $( pub $gpiohsx: $GPIOHSX, )+
+        }
+
+
+        impl GpiohsExt for pac::GPIOHS {
+            fn split(self) -> Parts {
+                Parts {
+                    $( $gpiohsx: $GPIOHSX { _ownership: () }, )+
+                }
+            }
+        }
+
+        /// All GPIOHS pins
+        pub mod gpiohs_pins {
+            use super::GpiohsIndex;
+            $(
+            /// GPIOHS pin
+            pub struct $GPIOHSX {
+                pub(crate) _ownership: ()
+            }
+
+            impl GpiohsIndex for $GPIOHSX {
+                type FUNC = crate::fpioa::functions::$func;
+                const INDEX: u8 = $num;
+            }
+            )+
         }
     }
 }
 
-pub struct Parts {
-    pub gpiohs0: Gpiohs0<Input<Floating>>,
+def_gpiohs_pins! {
+    GPIOHS0: (0, gpiohs0, GPIOHS0);
+    GPIOHS1: (1, gpiohs1, GPIOHS1);
+    GPIOHS2: (2, gpiohs2, GPIOHS2);
+    GPIOHS3: (3, gpiohs3, GPIOHS3);
+    GPIOHS4: (4, gpiohs4, GPIOHS4);
+    GPIOHS5: (5, gpiohs5, GPIOHS5);
+    GPIOHS6: (6, gpiohs6, GPIOHS6);
+    GPIOHS7: (7, gpiohs7, GPIOHS7);
+    GPIOHS8: (8, gpiohs8, GPIOHS8);
+    GPIOHS9: (9, gpiohs9, GPIOHS9);
+    GPIOHS10: (10, gpiohs10, GPIOHS10);
+    GPIOHS11: (11, gpiohs11, GPIOHS11);
+    GPIOHS12: (12, gpiohs12, GPIOHS12);
+    GPIOHS13: (13, gpiohs13, GPIOHS13);
+    GPIOHS14: (14, gpiohs14, GPIOHS14);
+    GPIOHS15: (15, gpiohs15, GPIOHS15);
+    GPIOHS16: (16, gpiohs16, GPIOHS16);
+    GPIOHS17: (17, gpiohs17, GPIOHS17);
+    GPIOHS18: (18, gpiohs18, GPIOHS18);
+    GPIOHS19: (19, gpiohs19, GPIOHS19);
+    GPIOHS20: (20, gpiohs20, GPIOHS20);
+    GPIOHS21: (21, gpiohs21, GPIOHS21);
+    GPIOHS22: (22, gpiohs22, GPIOHS22);
+    GPIOHS23: (23, gpiohs23, GPIOHS23);
+    GPIOHS24: (24, gpiohs24, GPIOHS24);
+    GPIOHS25: (25, gpiohs25, GPIOHS25);
+    GPIOHS26: (26, gpiohs26, GPIOHS26);
+    GPIOHS27: (27, gpiohs27, GPIOHS27);
+    GPIOHS28: (28, gpiohs28, GPIOHS28);
+    GPIOHS29: (29, gpiohs29, GPIOHS29);
+    GPIOHS30: (30, gpiohs30, GPIOHS30);
+    GPIOHS31: (31, gpiohs31, GPIOHS31);
 }
 
-pub struct Gpiohs0<MODE> {
+/// GPIOHS wrapper struct
+pub struct Gpiohs<GPIOHS, PIN, MODE> {
+    gpiohs: GPIOHS,
+    pin: PIN,
     _mode: PhantomData<MODE>,
 }
 
-impl<MODE> Gpiohs0<MODE> {
-    pub fn into_pull_up_input(self) -> Gpiohs0<Input<PullUp>> {
-        GPIOHS::set_output_en(0, false);
-        GPIOHS::set_input_en(0, true);
-        GPIOHS::set_pullup_en(0, true);
-        Gpiohs0 { _mode: PhantomData }
-    }
-
-    // todo: all modes
-}
-
-bitflags::bitflags! {
-    pub struct Edge: u8 {
-        const RISING =  0b00000001;
-        const FALLING = 0b00000010;
-        const HIGH =    0b00000100;
-        const LOW =     0b00001000;
-    }
-}
-
-impl<MODE> Gpiohs0<MODE> {
-    pub fn trigger_on_edge(&mut self, edge: Edge) {
-        // clear all pending bits
-        GPIOHS::clear_rise_ip(0);
-        GPIOHS::clear_fall_ip(0);
-        GPIOHS::clear_high_ip(0);
-        GPIOHS::clear_low_ip(0);
-        // enable interrupts according to flags
-        GPIOHS::set_rise_ie(0, edge.contains(Edge::RISING));
-        GPIOHS::set_fall_ie(0, edge.contains(Edge::FALLING));
-        GPIOHS::set_high_ie(0, edge.contains(Edge::HIGH));
-        GPIOHS::set_low_ie(0, edge.contains(Edge::LOW));
-    }
-
-    pub fn check_edges(&self) -> Edge {
-        let mut ans = Edge::empty();
-        if GPIOHS::has_rise_ip(0) {
-            ans |= Edge::RISING;
-        }
-        if GPIOHS::has_fall_ip(0) {
-            ans |= Edge::FALLING;
-        }
-        if GPIOHS::has_high_ip(0) {
-            ans |= Edge::HIGH;
-        }
-        if GPIOHS::has_low_ip(0) {
-            ans |= Edge::LOW;
-        }
-        ans
-    }
-
-    pub fn clear_interrupt_pending_bits(&mut self) {
-        if GPIOHS::has_rise_ie(0) {
-            GPIOHS::set_rise_ie(0, false);
-            GPIOHS::clear_rise_ip(0);
-            GPIOHS::set_rise_ie(0, true);
-        }
-        if GPIOHS::has_fall_ie(0) {
-            GPIOHS::set_fall_ie(0, false);
-            GPIOHS::clear_fall_ip(0);
-            GPIOHS::set_fall_ie(0, true);
-        }
-        if GPIOHS::has_high_ie(0) {
-            GPIOHS::set_high_ie(0, false);
-            GPIOHS::clear_high_ip(0);
-            GPIOHS::set_high_ie(0, true);
-        }
-        if GPIOHS::has_low_ie(0) {
-            GPIOHS::set_low_ie(0, false);
-            GPIOHS::clear_low_ip(0);
-            GPIOHS::set_low_ie(0, true);
+impl<GPIOHS: GpiohsIndex, PIN: Mode<GPIOHS::FUNC>> Gpiohs<GPIOHS, PIN, Unknown> {
+    pub fn new(gpiohs: GPIOHS, pin: PIN) -> Gpiohs<GPIOHS, PIN, Unknown> {
+        Gpiohs {
+            gpiohs,
+            pin,
+            _mode: PhantomData,
         }
     }
 }
 
-impl<MODE> InputPin for Gpiohs0<Input<MODE>> {
+impl<GPIOHS, PIN, MODE> Gpiohs<GPIOHS, PIN, MODE> {
+    pub fn free(self) -> (GPIOHS, PIN) {
+        (self.gpiohs, self.pin)
+    }
+}
+
+impl<GPIOHS: GpiohsIndex, PIN: IoPin, MODE: Active> Gpiohs<GPIOHS, PIN, MODE> {
+    pub fn into_floating_input(mut self) -> Gpiohs<GPIOHS, PIN, Input<Floating>> {
+        self.pin.set_io_pull(Pull::None);
+        self.direction_in();
+        Gpiohs {
+            gpiohs: self.gpiohs,
+            pin: self.pin,
+            _mode: PhantomData,
+        }
+    }
+
+    pub fn into_pull_up_input(mut self) -> Gpiohs<GPIOHS, PIN, Input<PullUp>> {
+        self.pin.set_io_pull(Pull::Up);
+        self.direction_in();
+        self.enable_pullup();
+        Gpiohs {
+            gpiohs: self.gpiohs,
+            pin: self.pin,
+            _mode: PhantomData,
+        }
+    }
+
+    pub fn into_pull_down_input(mut self) -> Gpiohs<GPIOHS, PIN, Input<PullDown>> {
+        self.pin.set_io_pull(Pull::Down);
+        self.direction_in();
+        self.disable_pullup();
+        Gpiohs {
+            gpiohs: self.gpiohs,
+            pin: self.pin,
+            _mode: PhantomData,
+        }
+    }
+
+    pub fn into_push_pull_output(mut self) -> Gpiohs<GPIOHS, PIN, Output> {
+        self.pin.set_io_pull(Pull::Down);
+        self.direction_out();
+        Gpiohs {
+            gpiohs: self.gpiohs,
+            pin: self.pin,
+            _mode: PhantomData,
+        }
+    }
+
+    #[inline]
+    fn direction_in(&mut self) {
+        unsafe {
+            (*pac::GPIOHS::ptr())
+                .output_en
+                .modify(|r, w| w.bits(r.bits() & (!(1 << GPIOHS::INDEX))));
+            (*pac::GPIOHS::ptr())
+                .input_en
+                .modify(|r, w| w.bits(r.bits() | (1 << GPIOHS::INDEX)));
+        }
+    }
+
+    #[inline]
+    fn direction_out(&mut self) {
+        unsafe {
+            (*pac::GPIOHS::ptr())
+                .output_en
+                .modify(|r, w| w.bits(r.bits() | (1 << GPIOHS::INDEX)));
+            (*pac::GPIOHS::ptr())
+                .input_en
+                .modify(|r, w| w.bits(r.bits() & (!(1 << GPIOHS::INDEX))));
+        }
+    }
+
+    #[inline]
+    fn enable_pullup(&mut self) {
+        unsafe {
+            (*pac::GPIOHS::ptr())
+                .pullup_en
+                .modify(|r, w| w.bits(r.bits() | (1 << GPIOHS::INDEX)));
+        }
+    }
+
+    #[inline]
+    fn disable_pullup(&mut self) {
+        unsafe {
+            (*pac::GPIOHS::ptr())
+                .pullup_en
+                .modify(|r, w| w.bits(r.bits() & (!(1 << GPIOHS::INDEX))));
+        }
+    }
+}
+
+impl<GPIOHS: GpiohsIndex, PIN, MODE> InputPin for Gpiohs<GPIOHS, PIN, Input<MODE>> {
     type Error = core::convert::Infallible;
 
     fn is_high(&self) -> Result<bool, Self::Error> {
-        Ok(unsafe {
-            let p = &(*GPIOHS::ptr()).input_val as *const _ as *const _;
-            u32_bit_is_set(p, 0)
-        })
+        Ok(
+            unsafe {
+                ((*pac::GPIOHS::ptr()).input_val.read().bits() >> GPIOHS::INDEX) & 0b1 == 0b1
+            },
+        )
     }
 
     fn is_low(&self) -> Result<bool, Self::Error> {
-        Ok(unsafe {
-            let p = &(*GPIOHS::ptr()).input_val as *const _ as *const _;
-            u32_bit_is_clear(p, 0)
-        })
+        Ok(
+            unsafe {
+                ((*pac::GPIOHS::ptr()).input_val.read().bits() >> GPIOHS::INDEX) & 0b1 == 0b0
+            },
+        )
     }
 }
 
-impl<MODE> OutputPin for Gpiohs0<Output<MODE>> {
+impl<GPIOHS: GpiohsIndex, PIN> OutputPin for Gpiohs<GPIOHS, PIN, Output> {
     type Error = core::convert::Infallible;
 
     fn set_high(&mut self) -> Result<(), Self::Error> {
         unsafe {
-            let p = &(*GPIOHS::ptr()).output_val as *const _ as *mut _;
-            u32_set_bit(p, true, 0);
+            (*pac::GPIOHS::ptr())
+                .output_val
+                .modify(|r, w| w.bits(r.bits() | (1 << GPIOHS::INDEX)));
         }
         Ok(())
     }
 
     fn set_low(&mut self) -> Result<(), Self::Error> {
         unsafe {
-            let p = &(*GPIOHS::ptr()).output_val as *const _ as *mut _;
-            u32_set_bit(p, false, 0);
+            (*pac::GPIOHS::ptr())
+                .output_val
+                .modify(|r, w| w.bits(r.bits() & (!(1 << GPIOHS::INDEX as u8))));
         }
         Ok(())
     }
 }
 
-trait GpiohsAccess {
-    fn peripheral() -> &'static mut crate::pac::gpiohs::RegisterBlock;
-
-    fn set_drive(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().drive as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
+impl<GPIOHS: GpiohsIndex, PIN> StatefulOutputPin for Gpiohs<GPIOHS, PIN, Output> {
+    fn is_set_high(&self) -> Result<bool, Self::Error> {
+        Ok(unsafe {
+            ((*pac::GPIOHS::ptr()).output_val.read().bits() >> GPIOHS::INDEX) & 0b1 == 0b1
+        })
     }
 
-    fn input_value(index: usize) -> bool {
-        unsafe {
-            let p = &mut Self::peripheral().input_val as *mut _ as *mut _;
-            u32_bit_is_set(p, index)
-        }
-    }
-
-    fn set_input_en(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().input_en as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn set_iof_en(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().iof_en as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn set_iof_sel(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().iof_sel as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn set_output_en(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().output_en as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn set_output_value(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().output_val as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn set_output_xor(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().output_xor as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn toggle_pin(index: usize) {
-        unsafe {
-            let p = &mut Self::peripheral().output_val as *mut _ as *mut _;
-            u32_toggle_bit(p, index);
-        }
-    }
-
-    fn set_pullup_en(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().pullup_en as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn set_rise_ie(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().rise_ie as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn clear_rise_ip(index: usize) {
-        unsafe {
-            let p = &mut Self::peripheral().rise_ip as *mut _ as *mut _;
-            u32_set_bit(p, true, index);
-        }
-    }
-
-    fn set_fall_ie(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().fall_ie as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn clear_fall_ip(index: usize) {
-        unsafe {
-            let p = &mut Self::peripheral().fall_ip as *mut _ as *mut _;
-            u32_set_bit(p, true, index);
-        }
-    }
-
-    fn set_high_ie(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().high_ie as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn clear_high_ip(index: usize,) {
-        unsafe {
-            let p = &mut Self::peripheral().high_ip as *mut _ as *mut _;
-            u32_set_bit(p, true, index);
-        }
-    }
-
-    fn set_low_ie(index: usize, bit: bool) {
-        unsafe {
-            let p = &mut Self::peripheral().low_ie as *mut _ as *mut _;
-            u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn clear_low_ip(index: usize) {
-        unsafe {
-            let p = &mut Self::peripheral().low_ip as *mut _ as *mut _;
-            u32_set_bit(p, true, index);
-        }
-    }
-
-    fn has_rise_ie(index: usize) -> bool {
-        unsafe {
-            let p = &mut Self::peripheral().rise_ie as *mut _ as *mut _;
-            u32_bit_is_set(p, index)
-        }
-    }
-
-    fn has_fall_ie(index: usize) -> bool {
-        unsafe {
-            let p = &mut Self::peripheral().fall_ie as *mut _ as *mut _;
-            u32_bit_is_set(p, index)
-        }
-    }
-
-    fn has_high_ie(index: usize) -> bool {
-        unsafe {
-            let p = &mut Self::peripheral().high_ie as *mut _ as *mut _;
-            u32_bit_is_set(p, index)
-        }
-    }
-
-    fn has_low_ie(index: usize) -> bool {
-        unsafe {
-            let p = &mut Self::peripheral().low_ie as *mut _ as *mut _;
-            u32_bit_is_set(p, index)
-        }
-    }
-
-    fn has_rise_ip(index: usize) -> bool {
-        unsafe {
-            let p = &mut Self::peripheral().rise_ip as *mut _ as *mut _;
-            u32_bit_is_set(p, index)
-        }
-    }
-
-    fn has_fall_ip(index: usize) -> bool {
-        unsafe {
-            let p = &mut Self::peripheral().fall_ip as *mut _ as *mut _;
-            u32_bit_is_set(p, index)
-        }
-    }
-
-    fn has_high_ip(index: usize) -> bool {
-        unsafe {
-            let p = &mut Self::peripheral().high_ip as *mut _ as *mut _;
-            u32_bit_is_set(p, index)
-        }
-    }
-
-    fn has_low_ip(index: usize) -> bool {
-        unsafe {
-            let p = &mut Self::peripheral().low_ip as *mut _ as *mut _;
-            u32_bit_is_set(p, index)
-        }
-    }
-
-}
-
-impl GpiohsAccess for GPIOHS {
-    fn peripheral() -> &'static mut crate::pac::gpiohs::RegisterBlock {
-        unsafe { &mut *(GPIOHS::ptr() as *mut _) }
+    fn is_set_low(&self) -> Result<bool, Self::Error> {
+        Ok(unsafe {
+            ((*pac::GPIOHS::ptr()).output_val.read().bits() >> GPIOHS::INDEX) & 0b1 == 0b0
+        })
     }
 }
+
+impl<GPIOHS: GpiohsIndex, PIN> ToggleableOutputPin for Gpiohs<GPIOHS, PIN, Output> {
+    type Error = core::convert::Infallible;
+
+    fn toggle(&mut self) -> Result<(), Self::Error> {
+        unsafe {
+            (*pac::GPIOHS::ptr())
+                .output_val
+                .modify(|r, w| w.bits(r.bits() ^ (1 << GPIOHS::INDEX)))
+        }
+        Ok(())
+    }
+}
+
+/// Gpiohs pin trigger edge type
+#[derive(Clone, Copy, Debug)]
+pub enum Edge {
+    None,
+    Falling,
+    Rising,
+    Both,
+    Low,
+    High = 8,
+}
+
+// TODO: interrupt
+// TODO: Drive Strength
