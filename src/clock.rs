@@ -15,15 +15,15 @@ pub struct Clocks {
 impl Clocks {
     #[doc(hidden)]
     pub fn new() -> Self {
-/*
-        [MAIXPY]Pll0:freq:806000000
-        [MAIXPY]Pll1:freq:398666666
-        [MAIXPY]Pll2:freq:45066666
-        [MAIXPY]cpu:freq:403000000
-        [MAIXPY]kpu:freq:398666666
-        in freq: 26000000
-        cpu_freq: 390000000
-*/
+        /*
+                [MAIXPY]Pll0:freq:806000000
+                [MAIXPY]Pll1:freq:398666666
+                [MAIXPY]Pll2:freq:45066666
+                [MAIXPY]cpu:freq:403000000
+                [MAIXPY]kpu:freq:398666666
+                in freq: 26000000
+                cpu_freq: 390000000
+        */
         Self {
             cpu: Hertz(403_000_000),
             apb0: Hertz(195_000_000),

@@ -1,6 +1,6 @@
 //! Field Programmable IO Array (FPIOA)
 
-/* 
+/*
     new design: Split FPIOA into several IO pins (IO0, IO1, .., IO47)
     with ownership of IOx struct we may change their functions.
     For GPIOs and GPIOHS's we should split them into another GpioXx structs.
@@ -11,8 +11,10 @@
     please fire an issue to tell us.
 */
 
-use crate::pac::FPIOA;
-use crate::sysctl::{self, APB0};
+use crate::{
+    pac::FPIOA,
+    sysctl::{self, APB0},
+};
 use core::marker::PhantomData;
 
 /// FPIOA function
@@ -87,7 +89,7 @@ pub mod io_pins {
     use core::marker::PhantomData;
     use super::{Function, IoPin, Mode, FUNCTION_DEFAULTS};
     use crate::pac::FPIOA;
-                    
+
 $(
     /// Programmable I/O pin
     pub struct $IoX<FUNC> {
@@ -96,9 +98,9 @@ $(
 
     impl<FUNC> $IoX<FUNC> {
         /// Change the programmable I/O pin into given function
-        /// 
+        ///
         /// You may refer to module [functions] for all functions.
-        /// 
+        ///
         /// [functions]: ../functions/index.html
         pub fn into_function<F: Function>(self, func: F) -> $IoX<F> {
             let _ = func; // note(discard): Zero-sized typestate value
@@ -118,54 +120,54 @@ $(
 }
 
 def_io_pin! {
-    Io0: (0, io0, JTAG_TCLK); 
-    Io1: (1, io1, JTAG_TDI); 
-    Io2: (2, io2, JTAG_TMS); 
-    Io3: (3, io3, JTAG_TDO); 
-    Io4: (4, io4, UARTHS_RX); 
-    Io5: (5, io5, UARTHS_TX); 
+    Io0: (0, io0, JTAG_TCLK);
+    Io1: (1, io1, JTAG_TDI);
+    Io2: (2, io2, JTAG_TMS);
+    Io3: (3, io3, JTAG_TDO);
+    Io4: (4, io4, UARTHS_RX);
+    Io5: (5, io5, UARTHS_TX);
     Io6: (6, io6, RESV0); // (FLOAT*): no default function
     Io7: (7, io7, RESV0); // (FLOAT*): no default function
-    Io8: (8, io8, GPIO0); 
-    Io9: (9, io9, GPIO1); 
-    Io10: (10, io10, GPIO2); 
-    Io11: (11, io11, GPIO3); 
-    Io12: (12, io12, GPIO4); 
-    Io13: (13, io13, GPIO5); 
-    Io14: (14, io14, GPIO6); 
-    Io15: (15, io15, GPIO7); 
-    Io16: (16, io16, GPIOHS0); 
-    Io17: (17, io17, GPIOHS1); 
-    Io18: (18, io18, GPIOHS2); 
-    Io19: (19, io19, GPIOHS3); 
-    Io20: (20, io20, GPIOHS4); 
-    Io21: (21, io21, GPIOHS5); 
-    Io22: (22, io22, GPIOHS6); 
-    Io23: (23, io23, GPIOHS7); 
-    Io24: (24, io24, GPIOHS8); 
-    Io25: (25, io25, GPIOHS9); 
-    Io26: (26, io26, GPIOHS10); 
-    Io27: (27, io27, GPIOHS11); 
-    Io28: (28, io28, GPIOHS12); 
-    Io29: (29, io29, GPIOHS13); 
-    Io30: (30, io30, GPIOHS14); 
-    Io31: (31, io31, GPIOHS15); 
-    Io32: (32, io32, GPIOHS16); 
-    Io33: (33, io33, GPIOHS17); 
-    Io34: (34, io34, GPIOHS18); 
-    Io35: (35, io35, GPIOHS19); 
-    Io36: (36, io36, GPIOHS20); 
-    Io37: (37, io37, GPIOHS21); 
-    Io38: (38, io38, GPIOHS22); 
-    Io39: (39, io39, GPIOHS23); 
-    Io40: (40, io40, GPIOHS24); 
-    Io41: (41, io41, GPIOHS25); 
-    Io42: (42, io42, GPIOHS26); 
-    Io43: (43, io43, GPIOHS27); 
-    Io44: (44, io44, GPIOHS28); 
-    Io45: (45, io45, GPIOHS29); 
-    Io46: (46, io46, GPIOHS30); 
-    Io47: (47, io47, GPIOHS31); 
+    Io8: (8, io8, GPIO0);
+    Io9: (9, io9, GPIO1);
+    Io10: (10, io10, GPIO2);
+    Io11: (11, io11, GPIO3);
+    Io12: (12, io12, GPIO4);
+    Io13: (13, io13, GPIO5);
+    Io14: (14, io14, GPIO6);
+    Io15: (15, io15, GPIO7);
+    Io16: (16, io16, GPIOHS0);
+    Io17: (17, io17, GPIOHS1);
+    Io18: (18, io18, GPIOHS2);
+    Io19: (19, io19, GPIOHS3);
+    Io20: (20, io20, GPIOHS4);
+    Io21: (21, io21, GPIOHS5);
+    Io22: (22, io22, GPIOHS6);
+    Io23: (23, io23, GPIOHS7);
+    Io24: (24, io24, GPIOHS8);
+    Io25: (25, io25, GPIOHS9);
+    Io26: (26, io26, GPIOHS10);
+    Io27: (27, io27, GPIOHS11);
+    Io28: (28, io28, GPIOHS12);
+    Io29: (29, io29, GPIOHS13);
+    Io30: (30, io30, GPIOHS14);
+    Io31: (31, io31, GPIOHS15);
+    Io32: (32, io32, GPIOHS16);
+    Io33: (33, io33, GPIOHS17);
+    Io34: (34, io34, GPIOHS18);
+    Io35: (35, io35, GPIOHS19);
+    Io36: (36, io36, GPIOHS20);
+    Io37: (37, io37, GPIOHS21);
+    Io38: (38, io38, GPIOHS22);
+    Io39: (39, io39, GPIOHS23);
+    Io40: (40, io40, GPIOHS24);
+    Io41: (41, io41, GPIOHS25);
+    Io42: (42, io42, GPIOHS26);
+    Io43: (43, io43, GPIOHS27);
+    Io44: (44, io44, GPIOHS28);
+    Io45: (45, io45, GPIOHS29);
+    Io46: (46, io46, GPIOHS30);
+    Io47: (47, io47, GPIOHS31);
 }
 
 /** Defaults per function (from Kendryte fpioa.c) */
@@ -218,7 +220,7 @@ pub mod functions {
     #[allow(non_camel_case_types)]
     pub struct $name;
 
-    impl Function for $name { 
+    impl Function for $name {
         const INDEX: u8 = $index;
     }
             )+

@@ -24,7 +24,7 @@ pub trait SysctlExt {
 
 impl SysctlExt for SYSCTL {
     fn constrain(self) -> Parts {
-        Parts { 
+        Parts {
             apb0: APB0 { _ownership: () },
         }
     }
@@ -35,20 +35,17 @@ pub struct Parts {
     // todo: PLL0, PLL1, PLL2
     // todo: CPU, SRAM, APB-bus, ROM, DMA, AI
     pub apb0: APB0,
-    // pub apb1: APB1,
-    // pub apb2: APB2,
+    /* pub apb1: APB1,
+     * pub apb2: APB2, */
 }
 
 pub struct APB0 {
-    _ownership: ()
+    _ownership: (),
 }
 
 impl APB0 {
     pub(crate) fn enable(&mut self) {
-        clk_en_cent().modify(
-            |_r, w|
-                w.apb0_clk_en().set_bit()
-        );
+        clk_en_cent().modify(|_r, w| w.apb0_clk_en().set_bit());
     }
 }
 

@@ -19,23 +19,21 @@ pub mod gpio;
 pub mod gpiohs;
 pub mod plic;
 pub mod serial;
-pub mod spi;
 pub mod sha256;
+pub mod spi;
 pub mod stdout;
 pub mod sysctl;
 pub mod time;
 
 /// Prelude
 pub mod prelude {
+    pub use crate::{
+        fpioa::FpioaExt as _k210_hal_fpioa_FpioaExt, gpio::GpioExt as _k210_hal_gpio_GpioExt,
+        gpiohs::GpiohsExt as _k210_hal_gpiohs_GpiohsExt, plic::PlicExt as _k210_hal_plic_PlicExt,
+        serial::SerialExt as _k210_hal_serial_SerialExt, stdout::Write as _k210_hal_stdout_Write,
+        sysctl::SysctlExt as _k210_hal_sysctl_SysctlExt, time::U32Ext as _k210_hal_time_U32Ext,
+    };
     pub use embedded_hal::prelude::*;
-    pub use crate::serial::SerialExt as _k210_hal_serial_SerialExt;
-    pub use crate::stdout::Write as _k210_hal_stdout_Write;
-    pub use crate::time::U32Ext as _k210_hal_time_U32Ext;
-    pub use crate::fpioa::FpioaExt as _k210_hal_fpioa_FpioaExt;
-    pub use crate::sysctl::SysctlExt as _k210_hal_sysctl_SysctlExt;
-    pub use crate::gpio::GpioExt as _k210_hal_gpio_GpioExt;
-    pub use crate::gpiohs::GpiohsExt as _k210_hal_gpiohs_GpiohsExt;
-    pub use crate::plic::PlicExt as _k210_hal_plic_PlicExt;
 }
 
 mod bit_utils {
