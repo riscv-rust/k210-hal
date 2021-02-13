@@ -75,6 +75,7 @@ impl SysctlExt for SYSCTL {
             aclk: ACLK { _ownership: () },
             apb0: APB0 { _ownership: () },
             pll0: PLL0 { _ownership: () },
+            timer0: Timer0 { _ownership: () },
         }
     }
 }
@@ -87,6 +88,8 @@ pub struct Parts {
     pub pll0: PLL0,
     /// entry for controlling the enable/disable/frequency of apb0
     pub apb0: APB0,
+    /// entry for controlling the enable/disable/frequency of Timer
+    pub timer0: Timer0,
     // todo: SRAM, APB-bus, ROM, DMA, AI, PLL1, PLL2, APB1, APB2
 }
 
@@ -302,3 +305,74 @@ impl ACLK {
         }
     }
 }
+
+pub struct Timer0 {
+    _ownership: (),
+}
+
+impl Timer0 {
+    pub fn enable(&mut self, apb0: &mut APB0) {
+        apb0.enable();
+        clk_en_peri().modify(|_, w| w.timer0_clk_en().set_bit());
+    }
+
+    pub fn disable(&mut self) {
+        clk_en_peri().modify(|_, w| w.timer0_clk_en().clear_bit());
+    }
+
+    fn use_external(&mut self) {
+        sysctl()
+            .clk_sel0
+            .modify(|_, w| w.timer0_clk_sel().clear_bit());
+    }
+
+    fn use_pll0(&mut self) {
+        sysctl()
+            .clk_sel0
+            .modify(|_, w| w.timer0_clk_sel().set_bit());
+    }
+
+    pub fn set_frequency(&mut self, resolution: impl Into<Hertz>) -> Hertz {
+        let resolution = resolution.into().0;
+        // resolution = input / ((timer0_clk + 1) * 2), timer0_clk is 8 bits
+
+        // find a nearest input
+        let in0_nearest_clk = (CLOCK_FREQ_IN0 / resolution / 2 - 1).min(255);
+        let in0_result = CLOCK_FREQ_IN0 / ((in0_nearest_clk + 1) * 2);
+        let in0_diff = (in0_result as i64 - resolution as i64).abs();
+
+        let pll0_freq = PLL0::steal().get_frequency().0;
+        let pll0_nearest_clk = (pll0_freq / resolution / 2 - 1).min(255);
+        let pll0_result = pll0_freq / ((pll0_nearest_clk + 1) * 2);
+        let pll0_diff = (pll0_result as i64 - resolution as i64).abs();
+
+        if in0_diff <= pll0_diff {
+            unsafe {
+                self.use_external();
+                sysctl()
+                    .clk_th2
+                    .modify(|_, w| w.timer0_clk().bits(in0_nearest_clk as u8));
+            }
+            Hertz(in0_result)
+        } else {
+            self.use_pll0();
+            unsafe {
+                sysctl()
+                    .clk_th2
+                    .modify(|_, w| w.timer0_clk().bits(pll0_nearest_clk as u8));
+            }
+            Hertz(pll0_result)
+        }
+    }
+    pub fn get_frequency(&self) -> Hertz {
+        let threshold = sysctl().clk_th2.read().timer0_clk().bits() as u32;
+        let input = if sysctl().clk_sel0.read().timer0_clk_sel().bit() {
+            PLL0::steal().get_frequency().0
+        } else {
+            CLOCK_FREQ_IN0
+        };
+        Hertz(input / ((threshold + 1) * 2))
+    }
+}
+
+// todo: Timer1, Timer2, maybe with a macro

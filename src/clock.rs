@@ -1,6 +1,5 @@
 //! Clock configuration
 //use crate::pac::PRCI;
-use crate::sysctl::ACLK;
 use crate::time::Hertz;
 
 /// Frozen clock frequencies
