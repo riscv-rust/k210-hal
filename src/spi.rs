@@ -6,18 +6,18 @@ use crate::sysctl::{self, APB0};
 pub use embedded_hal::spi::{Mode, Polarity, Phase};
 use core::convert::Infallible;
 
-/// 
+///
 pub struct Spi<SPI> {
     spi: SPI
 }
 
 impl Spi<SPI0> {
     pub fn spi0(
-        spi: SPI0, 
-        mode: Mode, 
-        frame_format: FrameFormat, 
-        endian: Endian, 
-        clock: &Clocks, 
+        spi: SPI0,
+        mode: Mode,
+        frame_format: FrameFormat,
+        endian: Endian,
+        clock: &Clocks,
         apb0: &mut APB0
     ) -> Self {
         let work_mode = hal_mode_to_pac(mode);
@@ -53,14 +53,14 @@ impl Spi<SPI0> {
         // enable APB0 bus
         apb0.enable();
         // enable peripheral via sysctl
-        sysctl::clk_en_peri().modify(|_r, w| 
+        sysctl::clk_en_peri().modify(|_r, w|
             w.spi0_clk_en().set_bit());
         Spi { spi }
     }
 
     pub fn release(self) -> SPI0 {
         // power off
-        sysctl::clk_en_peri().modify(|_r, w| 
+        sysctl::clk_en_peri().modify(|_r, w|
             w.spi0_clk_en().clear_bit());
         self.spi
     }
@@ -74,12 +74,12 @@ impl embedded_hal::spi::FullDuplex<u8> for Spi<SPI0> {
     ///
     /// **NOTE** A word must be sent to the slave before attempting to call this
     /// method.
-    fn try_read(&mut self) -> nb::Result<u8, Self::Error> {
+    fn read(&mut self) -> nb::Result<u8, Self::Error> {
         todo!()
     }
 
     /// Sends a word to the slave
-    fn try_send(&mut self, word: u8) -> nb::Result<(), Self::Error> {
+    fn send(&mut self, word: u8) -> nb::Result<(), Self::Error> {
         todo!("{}", word)
     }
 }
