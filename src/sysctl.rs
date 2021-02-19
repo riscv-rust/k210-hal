@@ -75,6 +75,7 @@ impl SysctlExt for SYSCTL {
             aclk: ACLK { _ownership: () },
             apb0: APB0 { _ownership: () },
             apb1: APB1 { _ownership: () },
+            apb2: APB2 { _ownership: () },
             pll0: PLL0 { _ownership: () },
         }
     }
@@ -90,7 +91,9 @@ pub struct Parts {
     pub apb0: APB0,
     /// entry for controlling the enable/disable/frequency of apb1
     pub apb1: APB1,
-    // todo: SRAM, APB-bus, ROM, DMA, AI, PLL1, PLL2, APB2
+    /// entry for controlling the enable/disable/frequency of apb2
+    pub apb2: APB2,
+    // todo: SRAM, APB-bus, ROM, DMA, AI, PLL1, PLL2
 }
 
 impl Parts {
@@ -99,6 +102,7 @@ impl Parts {
             aclk: self.aclk.get_frequency(),
             apb0: self.apb0.get_frequency(),
             apb1: self.apb1.get_frequency(),
+            apb2: self.apb2.get_frequency(),
         }
     }
 }
@@ -166,9 +170,36 @@ impl APB1 {
     }
 }
 
-// pub struct APB2 {
-//     _ownership: ()
-// }
+pub struct APB2 {
+    _ownership: (),
+}
+
+impl APB2 {
+    pub fn enable(&mut self) {
+        clk_en_cent().modify(|_, w| w.apb2_clk_en().set_bit())
+    }
+
+    pub fn set_frequency(&mut self, expected_freq: impl Into<Hertz>) -> Hertz {
+        let aclk = ACLK::steal();
+        let aclk_frequency = aclk.get_frequency().0 as i64;
+        let apb2_clk_sel = (aclk_frequency / expected_freq.into().0 as i64 + 1)
+            .max(0)
+            .min(0b111) as u8;
+        unsafe {
+            sysctl()
+                .clk_sel0
+                .modify(|_, w| w.apb2_clk_sel().bits(apb2_clk_sel))
+        }
+        Hertz(aclk_frequency as u32 / (apb2_clk_sel as u32 + 1))
+    }
+
+    pub fn get_frequency(&self) -> Hertz {
+        let aclk = ACLK::steal();
+        let aclk_frequency = aclk.get_frequency().0 as i64;
+        let apb2_clk_sel = sysctl().clk_sel0.read().apb2_clk_sel().bits();
+        Hertz(aclk_frequency as u32 / (apb2_clk_sel as u32 + 1))
+    }
+}
 
 /// PLL0, which source is CLOCK_FREQ_IN0,
 /// and the output can be used on ACLK(CPU), SPIs, etc.
