@@ -17,6 +17,8 @@ pub struct Dvp {
     pub dvp: pac::DVP,
 }
 
+pub type ImageFormat = pac::dvp::dvp_cfg::FORMAT_A;
+
 impl Dvp {
     pub fn sccb_clk_init(&self) {
         unsafe {
@@ -110,5 +112,103 @@ impl Dvp {
 
         self.sccb_clk_init();
         self.reset();
+    }
+
+    pub fn set_xclk_rate(&self, xclk_rate: Hertz, clock: &Clocks) -> Hertz {
+        let apb1_clk = clock.apb1().0;
+        let period = if apb1_clk > xclk_rate.0 * 2 {
+            apb1_clk / xclk_rate.0 / 2 - 1 as u32
+        } else {
+            0
+        };
+
+        let period = period.min(255);
+        unsafe {
+            self.dvp
+                .cmos_cfg
+                .modify(|_, w| w.clk_div().bits(period as u8).clk_enable().set_bit())
+        }
+
+        self.reset();
+        Hertz(apb1_clk / (period + 1) / 2)
+    }
+
+    pub fn set_image_size(&self, burst_mode: bool, width: u16, height: u16) {
+        use pac::dvp::axi::GM_MLEN_A::*;
+        let burst_num = if burst_mode {
+            self.dvp
+                .dvp_cfg
+                .modify(|_, w| w.burst_size_4beats().set_bit());
+            self.dvp.axi.modify(|_, w| w.gm_mlen().variant(BYTE4));
+            width / 8 / 4
+        } else {
+            self.dvp
+                .dvp_cfg
+                .modify(|_, w| w.burst_size_4beats().clear_bit());
+            self.dvp.axi.modify(|_, w| w.gm_mlen().variant(BYTE1));
+            width / 8 / 1
+        };
+
+        let burst_num = burst_num.min(255).max(0) as u8;
+
+        unsafe {
+            self.dvp
+                .dvp_cfg
+                .modify(|_, w| w.href_burst_num().bits(burst_num).line_num().bits(height))
+        }
+    }
+
+    pub fn set_image_format(&self, format: ImageFormat) {
+        self.dvp.dvp_cfg.modify(|_, w| w.format().variant(format));
+    }
+
+    pub fn set_display_addr(&self, addr: Option<*mut u32>) {
+        unsafe {
+            if let Some(addr) = addr {
+                self.dvp
+                    .rgb_addr
+                    .write(|w| w.bits((addr as usize & 0xffff_ffff) as u32));
+                self.dvp
+                    .dvp_cfg
+                    .modify(|_, w| w.display_output_enable().set_bit());
+            } else {
+                self.dvp
+                    .dvp_cfg
+                    .modify(|_, w| w.display_output_enable().clear_bit());
+            }
+        }
+    }
+
+    pub fn set_auto(&self, status: bool) {
+        self.dvp.dvp_cfg.modify(|_, w| w.auto_enable().bit(status));
+    }
+
+    pub fn get_image(&self) {
+        while !self.dvp.sts.read().frame_start().bit() {
+            // IDLE
+        }
+        self.dvp
+            .sts
+            .write(|w| w.frame_start().set_bit().frame_start_we().set_bit());
+        while !self.dvp.sts.read().frame_start().bit() {
+            // IDLE
+        }
+        self.dvp.sts.write(|w| {
+            w.frame_finish()
+                .set_bit()
+                .frame_finish_we()
+                .set_bit()
+                .frame_start()
+                .set_bit()
+                .frame_start_we()
+                .set_bit()
+                .dvp_en()
+                .set_bit()
+                .dvp_en_we()
+                .set_bit()
+        });
+        while !self.dvp.sts.read().frame_finish().bit() {
+            // IDLE
+        }
     }
 }
