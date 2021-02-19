@@ -74,6 +74,7 @@ impl SysctlExt for SYSCTL {
         Parts {
             aclk: ACLK { _ownership: () },
             apb0: APB0 { _ownership: () },
+            apb1: APB1 { _ownership: () },
             pll0: PLL0 { _ownership: () },
         }
     }
@@ -87,7 +88,9 @@ pub struct Parts {
     pub pll0: PLL0,
     /// entry for controlling the enable/disable/frequency of apb0
     pub apb0: APB0,
-    // todo: SRAM, APB-bus, ROM, DMA, AI, PLL1, PLL2, APB1, APB2
+    /// entry for controlling the enable/disable/frequency of apb1
+    pub apb1: APB1,
+    // todo: SRAM, APB-bus, ROM, DMA, AI, PLL1, PLL2, APB2
 }
 
 impl Parts {
@@ -95,6 +98,7 @@ impl Parts {
         Clocks {
             aclk: self.aclk.get_frequency(),
             apb0: self.apb0.get_frequency(),
+            apb1: self.apb1.get_frequency(),
         }
     }
 }
@@ -131,9 +135,36 @@ impl APB0 {
     }
 }
 
-// pub struct APB1 {
-//     _ownership: ()
-// }
+pub struct APB1 {
+    _ownership: (),
+}
+
+impl APB1 {
+    pub fn enable(&mut self) {
+        clk_en_cent().modify(|_, w| w.apb1_clk_en().set_bit())
+    }
+
+    pub fn set_frequency(&mut self, expected_freq: impl Into<Hertz>) -> Hertz {
+        let aclk = ACLK::steal();
+        let aclk_frequency = aclk.get_frequency().0 as i64;
+        let apb1_clk_sel = (aclk_frequency / expected_freq.into().0 as i64 + 1)
+            .max(0)
+            .min(0b111) as u8;
+        unsafe {
+            sysctl()
+                .clk_sel0
+                .modify(|_, w| w.apb1_clk_sel().bits(apb1_clk_sel))
+        }
+        Hertz(aclk_frequency as u32 / (apb1_clk_sel as u32 + 1))
+    }
+
+    pub fn get_frequency(&self) -> Hertz {
+        let aclk = ACLK::steal();
+        let aclk_frequency = aclk.get_frequency().0 as i64;
+        let apb1_clk_sel = sysctl().clk_sel0.read().apb1_clk_sel().bits();
+        Hertz(aclk_frequency as u32 / (apb1_clk_sel as u32 + 1))
+    }
+}
 
 // pub struct APB2 {
 //     _ownership: ()
