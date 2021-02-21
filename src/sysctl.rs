@@ -135,9 +135,37 @@ impl APB0 {
 //     _ownership: ()
 // }
 
-// pub struct APB2 {
-//     _ownership: ()
-// }
+pub struct APB2 {
+    _ownership: (),
+}
+
+impl APB2 {
+    pub(crate) fn enable(&mut self) {
+        clk_en_cent().modify(|_r, w| w.apb2_clk_en().set_bit());
+    }
+
+    pub fn set_frequency(&mut self, expected_freq: impl Into<Hertz>) -> Hertz {
+        let aclk = ACLK::steal();
+        let aclk_frequency = aclk.get_frequency().0 as i64;
+        // apb2_frequency = aclk_frequency / (apb2_clk_sel + 1)
+        let apb2_clk_sel = (aclk_frequency / expected_freq.into().0 as i64 - 1)
+            .max(0)
+            .min(0b111) as u8;
+        unsafe {
+            sysctl()
+                .clk_sel0
+                .modify(|_, w| w.apb2_clk_sel().bits(apb2_clk_sel));
+        }
+        Hertz(aclk_frequency as u32 / (apb2_clk_sel as u32 + 1))
+    }
+
+    pub fn get_frequency(&self) -> Hertz {
+        let aclk = ACLK::steal();
+        let aclk_frequency = aclk.get_frequency().0 as i64;
+        let apb2_clk_sel = sysctl().clk_sel0.read().apb2_clk_sel().bits();
+        Hertz(aclk_frequency as u32 / (apb2_clk_sel as u32 + 1))
+    }
+}
 
 /// PLL0, which source is CLOCK_FREQ_IN0,
 /// and the output can be used on ACLK(CPU), SPIs, etc.

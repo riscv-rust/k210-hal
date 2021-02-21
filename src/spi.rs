@@ -3,7 +3,7 @@
 use crate::clock::Clocks;
 use crate::pac::spi0::ctrlr0::TMOD_A as transfer_mode;
 use crate::pac::SPI0;
-use crate::sysctl::{self, APB0};
+use crate::sysctl::{self, APB2};
 use core::convert::Infallible;
 pub use embedded_hal::spi::{Mode, Phase, Polarity};
 
@@ -23,7 +23,7 @@ impl Spi<SPI0> {
         frame_format: FrameFormat,
         endian: Endian,
         clock: &Clocks,
-        apb0: &mut APB0,
+        apb2: &mut APB2,
     ) -> Self {
         let work_mode = hal_mode_to_pac(mode);
         let frame_format = frame_format_to_pac(frame_format);
@@ -54,7 +54,7 @@ impl Spi<SPI0> {
             spi.endian.write(|w| w.bits(endian));
         }
         // enable APB0 bus
-        apb0.enable();
+        apb2.enable();
         // enable peripheral via sysctl
         sysctl::clk_en_peri().modify(|_r, w| w.spi0_clk_en().set_bit());
         Spi { spi, cs_id }
