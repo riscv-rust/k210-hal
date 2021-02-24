@@ -1,6 +1,7 @@
 //! (TODO) System Controller (SYSCTL)
 
 use crate::clock::Clocks;
+use crate::dmac::DmacChannel;
 use crate::pac::{sysctl, SYSCTL};
 use crate::time::Hertz;
 use core::sync::atomic::Ordering;
@@ -21,6 +22,21 @@ pub(crate) fn clk_en_peri<'a>() -> &'a sysctl::CLK_EN_PERI {
 
 pub(crate) fn peri_reset<'a>() -> &'a sysctl::PERI_RESET {
     &sysctl().peri_reset
+}
+
+pub use crate::pac::sysctl::dma_sel0::DMA_SEL0_A as DmaSelect;
+
+pub(crate) fn set_dma_sel(ch: DmacChannel, sel: DmaSelect) {
+    use DmacChannel::*;
+    let sysctl = sysctl();
+    match ch {
+        Channel0 => sysctl.dma_sel0.modify(|_, w| w.dma_sel0().variant(sel)),
+        Channel1 => sysctl.dma_sel0.modify(|_, w| w.dma_sel1().variant(sel)),
+        Channel2 => sysctl.dma_sel0.modify(|_, w| w.dma_sel2().variant(sel)),
+        Channel3 => sysctl.dma_sel0.modify(|_, w| w.dma_sel3().variant(sel)),
+        Channel4 => sysctl.dma_sel0.modify(|_, w| w.dma_sel4().variant(sel)),
+        Channel5 => sysctl.dma_sel1.modify(|_, w| w.dma_sel5().variant(sel)),
+    }
 }
 
 /// Accept freq_in as the input frequency,
