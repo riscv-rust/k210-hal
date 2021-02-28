@@ -74,7 +74,10 @@ impl SysctlExt for SYSCTL {
         Parts {
             aclk: ACLK { _ownership: () },
             apb0: APB0 { _ownership: () },
+            apb2: APB2 { _ownership: () },
             pll0: PLL0 { _ownership: () },
+            spi0: SPI0 { _ownership: () },
+            spi1: SPI1 { _ownership: () },
         }
     }
 }
@@ -87,6 +90,12 @@ pub struct Parts {
     pub pll0: PLL0,
     /// entry for controlling the enable/disable/frequency of apb0
     pub apb0: APB0,
+    /// entry for controlling the enable/disable/frequency of apb2
+    pub apb2: APB2,
+    /// entry for controlling the enable/disable/frequency of spi0
+    pub spi0: SPI0,
+    /// entry for controlling the enable/disable/frequency of spi1
+    pub spi1: SPI1,
     // todo: SRAM, APB-bus, ROM, DMA, AI, PLL1, PLL2, APB1, APB2
 }
 
@@ -264,7 +273,7 @@ pub struct ACLK {
 
 /// ACLK clock frequency control
 impl ACLK {
-    pub fn steal() -> Self {
+    pub(crate) fn steal() -> Self {
         ACLK { _ownership: () }
     }
 
@@ -328,5 +337,53 @@ impl ACLK {
             let aclk_divider_sel = sysctl().clk_sel0.read().aclk_divider_sel().bits();
             Hertz(pll0 / (2 << aclk_divider_sel))
         }
+    }
+}
+
+pub struct SPI0 {
+    _ownership: (),
+}
+
+impl SPI0 {
+    pub fn set_frequency(&mut self, expected_freq: impl Into<Hertz>) -> Hertz {
+        let expected_freq = expected_freq.into().0;
+        // spi0 = source(pll0) / ((spi0_clk_threshold + 1) * 2)
+        let source = PLL0::steal().get_frequency().0;
+        let spi0_clk_threshold = (source / expected_freq / 2 - 1).min(u8::max_value() as _) as u8;
+        unsafe {
+            sysctl()
+                .clk_th1
+                .modify(|_, w| w.spi0_clk().bits(spi0_clk_threshold));
+        }
+        Hertz(source / ((spi0_clk_threshold as u32 + 1) * 2))
+    }
+    pub fn get_frequency(&self) -> Hertz {
+        let source = PLL0::steal().get_frequency().0;
+        let spi0_clk_threshold = sysctl().clk_th1.read().spi0_clk().bits() as u32;
+        Hertz(source / ((spi0_clk_threshold as u32 + 1) * 2))
+    }
+}
+
+pub struct SPI1 {
+    _ownership: (),
+}
+
+impl SPI1 {
+    pub fn set_frequency(&mut self, expected_freq: impl Into<Hertz>) -> Hertz {
+        let expected_freq = expected_freq.into().0;
+        // spi1 = source(pll0) / ((spi1_clk_threshold + 1) * 2)
+        let source = PLL0::steal().get_frequency().0;
+        let spi1_clk_threshold = (source / expected_freq / 2 - 1).min(u8::max_value() as _) as u8;
+        unsafe {
+            sysctl()
+                .clk_th1
+                .modify(|_, w| w.spi1_clk().bits(spi1_clk_threshold));
+        }
+        Hertz(source / ((spi1_clk_threshold as u32 + 1) * 2))
+    }
+    pub fn get_frequency(&self) -> Hertz {
+        let source = PLL0::steal().get_frequency().0;
+        let spi1_clk_threshold = sysctl().clk_th1.read().spi1_clk().bits() as u32;
+        Hertz(source / ((spi1_clk_threshold as u32 + 1) * 2))
     }
 }
