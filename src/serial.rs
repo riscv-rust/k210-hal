@@ -100,7 +100,7 @@ impl Serial<UARTHS> {
 impl serial::Read<u8> for Rx<UARTHS> {
     type Error = Infallible;
 
-    fn try_read(&mut self) -> nb::Result<u8, Infallible> {
+    fn read(&mut self) -> nb::Result<u8, Infallible> {
         let rxdata = self.uart.rxdata.read();
 
         if rxdata.empty().bit_is_set() {
@@ -114,7 +114,7 @@ impl serial::Read<u8> for Rx<UARTHS> {
 impl serial::Write<u8> for Tx<UARTHS> {
     type Error = Infallible;
 
-    fn try_write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
+    fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
         let txdata = self.uart.txdata.read();
 
         if txdata.full().bit_is_set() {
@@ -127,7 +127,7 @@ impl serial::Write<u8> for Tx<UARTHS> {
         }
     }
 
-    fn try_flush(&mut self) -> nb::Result<(), Infallible> {
+    fn flush(&mut self) -> nb::Result<(), Infallible> {
         let txdata = self.uart.txdata.read();
 
         if txdata.full().bit_is_set() {
@@ -200,7 +200,7 @@ impl<UART: UartX> Serial<UART> {
 impl<UART: UartX> serial::Read<u8> for Rx<UART> {
     type Error = Infallible;
 
-    fn try_read(&mut self) -> nb::Result<u8, Infallible> {
+    fn read(&mut self) -> nb::Result<u8, Infallible> {
         let lsr = self.uart.lsr.read();
 
         if (lsr.bits() & (1<<0)) == 0 { // Data Ready bit
@@ -215,7 +215,7 @@ impl<UART: UartX> serial::Read<u8> for Rx<UART> {
 impl<UART: UartX> serial::Write<u8> for Tx<UART> {
     type Error = Infallible;
 
-    fn try_write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
+    fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
         let lsr = self.uart.lsr.read();
 
         if (lsr.bits() & (1<<5)) != 0 { // Transmit Holding Register Empty bit
@@ -228,7 +228,7 @@ impl<UART: UartX> serial::Write<u8> for Tx<UART> {
         }
     }
 
-    fn try_flush(&mut self) -> nb::Result<(), Infallible> {
+    fn flush(&mut self) -> nb::Result<(), Infallible> {
         // TODO
         Ok(())
     }

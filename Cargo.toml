@@ -7,13 +7,13 @@ description = "Hardware Abstract Layer (HAL) support for K210, dual-core RV64GC 
 repository = "https://github.com/riscv-rust/k210-hal"
 keywords = ["riscv", "k210", "hal"]
 license = "ISC"
-edition = "2018"
+edition = "2021"
 
 [package.metadata.docs.rs]
 targets = ["riscv64gc-unknown-none-elf"]
 
 [dependencies]
-embedded-hal = "1.0.0-alpha.1"
-nb = "0.1.1"
+embedded-hal = { version = "0.2.7", features = ["unproven"] }
+nb = "1"
 k210-pac = "0.2.0"
-bitflags = "1.2.1"
+bitflags = "1.3"

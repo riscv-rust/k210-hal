@@ -74,12 +74,12 @@ impl embedded_hal::spi::FullDuplex<u8> for Spi<SPI0> {
     ///
     /// **NOTE** A word must be sent to the slave before attempting to call this
     /// method.
-    fn try_read(&mut self) -> nb::Result<u8, Self::Error> {
+    fn read(&mut self) -> nb::Result<u8, Self::Error> {
         todo!()
     }
 
     /// Sends a word to the slave
-    fn try_send(&mut self, word: u8) -> nb::Result<(), Self::Error> {
+    fn send(&mut self, word: u8) -> nb::Result<(), Self::Error> {
         todo!("{}", word)
     }
 }
