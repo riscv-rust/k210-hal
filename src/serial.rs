@@ -34,7 +34,10 @@ impl<UART> Serial<UART> {
             Tx { uart: self.uart },
             Rx {
                 // clippy allow: inner marker variable only indicates ownership, does not include actual data
-                uart: unsafe { #[allow(clippy::uninit_assumed_init)] mem::MaybeUninit::uninit().assume_init() },
+                uart: unsafe {
+                    #[allow(clippy::uninit_assumed_init)]
+                    mem::MaybeUninit::uninit().assume_init()
+                },
             },
         )
     }

@@ -17,9 +17,9 @@ pub trait PlicExt {
     /// Is this M-Mode interrupt enabled on given hart?
     fn is_enabled(hart_id: usize, interrupt: Self::Interrupt) -> bool;
     /// Enable an interrupt for a given hart
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// May effect normal interrupt handling procedure
     unsafe fn unmask(hart_id: usize, interrupt: Self::Interrupt);
     /// Disable an interrupt for a given hart
@@ -27,17 +27,17 @@ pub trait PlicExt {
     /// Get global priority for one interrupt
     fn get_priority(interrupt: Self::Interrupt) -> Priority;
     /// Globally set priority for one interrupt
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// May effect normal interrupt handling procedure
     unsafe fn set_priority(interrupt: Self::Interrupt, prio: Priority);
     /// Get priority threshold for a given hart
     fn get_threshold(hart_id: usize) -> Priority;
     /// Set the priority threshold for a given hart
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// May effect normal interrupt handling procedure
     unsafe fn set_threshold(hart_id: usize, threshold: Priority);
     /// Mark that given hart have claimed to handle this interrupt
