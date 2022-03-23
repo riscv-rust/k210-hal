@@ -7,7 +7,7 @@ use nb::block;
 pub struct Stdout<'p, T>(pub &'p mut T);
 
 impl<'p, T> Write for Stdout<'p, T>
-    where
+where
     T: embedded_hal::serial::Write<u8>,
 {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {

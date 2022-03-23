@@ -39,10 +39,10 @@ fn calculate_pll_config(freq_in: u32, freq: u32) -> (u8, u8, u8) {
     // for archiving a higher accuracy, we want the nr * od as large as possible
     // use binary search to find the largest nr_od which freq <= freq_in * 0b1_000_000 / nr_od
     let mut left = 1;
-    let mut right = 0b10_000 * 0b10_000 + 1;
+    let mut right = 0b1_0000 * 0b1_0000 + 1;
     while left + 1 < right {
         let mid = (left + right) / 2;
-        let max_freq = freq_in * 0b1_000_000 / mid;
+        let max_freq = freq_in * 0b100_0000 / mid;
         if freq >= max_freq {
             // in [left, mid)
             right = mid;
@@ -54,10 +54,10 @@ fn calculate_pll_config(freq_in: u32, freq: u32) -> (u8, u8, u8) {
     let nr_od = left;
     // so we got nf
     let nf = freq * nr_od / freq_in;
-    let nf = nf.min(0b1_000_000) as u8;
+    let nf = nf.min(0b100_0000) as u8;
 
     // decompose nr_od
-    for nr in 1..=0b10_000 {
+    for nr in 1..=0b1_0000 {
         if (nr_od / nr) * nr == nr_od {
             return (nr as u8, (nr_od / nr) as u8, nf);
         }

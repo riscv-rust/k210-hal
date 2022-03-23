@@ -8,7 +8,7 @@
 
 // }
 
-use crate::pac::{PLIC, Interrupt};
+use crate::pac::{Interrupt, PLIC};
 
 /// Extension trait for PLIC interrupt controller peripheral
 pub trait PlicExt {
@@ -17,22 +17,34 @@ pub trait PlicExt {
     /// Is this M-Mode interrupt enabled on given hart?
     fn is_enabled(hart_id: usize, interrupt: Self::Interrupt) -> bool;
     /// Enable an interrupt for a given hart
+    /// 
+    /// # Safety
+    /// 
+    /// May effect normal interrupt handling procedure
     unsafe fn unmask(hart_id: usize, interrupt: Self::Interrupt);
     /// Disable an interrupt for a given hart
     fn mask(hart_id: usize, interrupt: Self::Interrupt);
     /// Get global priority for one interrupt
     fn get_priority(interrupt: Self::Interrupt) -> Priority;
     /// Globally set priority for one interrupt
+    /// 
+    /// # Safety
+    /// 
+    /// May effect normal interrupt handling procedure
     unsafe fn set_priority(interrupt: Self::Interrupt, prio: Priority);
     /// Get priority threshold for a given hart
     fn get_threshold(hart_id: usize) -> Priority;
     /// Set the priority threshold for a given hart
+    /// 
+    /// # Safety
+    /// 
+    /// May effect normal interrupt handling procedure
     unsafe fn set_threshold(hart_id: usize, threshold: Priority);
     /// Mark that given hart have claimed to handle this interrupt
     fn claim(hart_id: usize) -> Option<Self::Interrupt>;
     /// Mark that given hart have completed handling this interrupt
     fn complete(hart_id: usize, interrupt: Self::Interrupt);
-    /// Is this interrupt claimed and under procceeding? 
+    /// Is this interrupt claimed and under procceeding?
     fn is_pending(interrupt: Self::Interrupt) -> bool;
 }
 
@@ -42,72 +54,64 @@ impl PlicExt for PLIC {
         let irq_number = interrupt.into_bits() as usize;
         unsafe {
             (*PLIC::ptr()).target_enables[hart_id].enable[irq_number / 32]
-                .read().bits() & 1 << (irq_number % 32) != 0
+                .read()
+                .bits()
+                & 1 << (irq_number % 32)
+                != 0
         }
     }
     unsafe fn unmask(hart_id: usize, interrupt: Interrupt) {
         let irq_number = interrupt.into_bits() as usize;
         (*PLIC::ptr()).target_enables[hart_id].enable[irq_number / 32]
-            .modify(|r, w| 
-                w.bits(r.bits() | 1 << (irq_number % 32)));
+            .modify(|r, w| w.bits(r.bits() | 1 << (irq_number % 32)));
     }
-    fn mask(hart_id: usize, interrupt: Interrupt) { 
+    fn mask(hart_id: usize, interrupt: Interrupt) {
         let irq_number = interrupt.into_bits() as usize;
         unsafe {
             (*PLIC::ptr()).target_enables[hart_id].enable[irq_number / 32]
-                .modify(|r, w| 
-                    w.bits(r.bits() & !(1 << (irq_number % 32))));
+                .modify(|r, w| w.bits(r.bits() & !(1 << (irq_number % 32))));
         }
     }
-    fn get_priority(interrupt: Interrupt) -> Priority { 
+    fn get_priority(interrupt: Interrupt) -> Priority {
         let irq_number = interrupt.into_bits() as usize;
-        let bits = unsafe {
-            (*PLIC::ptr()).priority[irq_number].read().bits() 
-        };
+        let bits = unsafe { (*PLIC::ptr()).priority[irq_number].read().bits() };
         Priority::from_bits(bits)
     }
-    unsafe fn set_priority(interrupt: Interrupt, prio: Priority) { 
+    unsafe fn set_priority(interrupt: Interrupt, prio: Priority) {
         let irq_number = interrupt.into_bits() as usize;
-        (*PLIC::ptr()).priority[irq_number].write(
-            |w| 
-                w.bits(prio.into_bits()));
+        (*PLIC::ptr()).priority[irq_number].write(|w| w.bits(prio.into_bits()));
     }
     fn get_threshold(hart_id: usize) -> Priority {
-        let bits = unsafe {
-            (*PLIC::ptr()).targets[hart_id].threshold.read().bits()
-        };
+        let bits = unsafe { (*PLIC::ptr()).targets[hart_id].threshold.read().bits() };
         Priority::from_bits(bits)
     }
     unsafe fn set_threshold(hart_id: usize, threshold: Priority) {
-        (*PLIC::ptr()).targets[hart_id].threshold.write(
-            |w| 
-                w.bits(threshold.into_bits()));
+        (*PLIC::ptr()).targets[hart_id]
+            .threshold
+            .write(|w| w.bits(threshold.into_bits()));
     }
     fn claim(hart_id: usize) -> Option<Interrupt> {
-        let bits = unsafe {
-            (*PLIC::ptr()).targets[hart_id].claim.read().bits()
-        };
+        let bits = unsafe { (*PLIC::ptr()).targets[hart_id].claim.read().bits() };
         Nr::from_bits(bits)
     }
     fn complete(hart_id: usize, interrupt: Interrupt) {
         unsafe {
-            (*PLIC::ptr()).targets[hart_id].claim.write(
-                |w| 
-                    w.bits(interrupt.into_bits()));
+            (*PLIC::ptr()).targets[hart_id]
+                .claim
+                .write(|w| w.bits(interrupt.into_bits()));
         }
     }
     fn is_pending(interrupt: Interrupt) -> bool {
         let irq_number = interrupt.into_bits() as usize;
         unsafe {
-            (*PLIC::ptr()).pending[irq_number / 32]
-                .read().bits() & 1 << (irq_number % 32) != 0
+            (*PLIC::ptr()).pending[irq_number / 32].read().bits() & 1 << (irq_number % 32) != 0
         }
     }
 }
 
 impl Nr for Interrupt {
-    fn into_bits(&self) -> u32 {
-        *self as u8 as u32
+    fn into_bits(self) -> u32 {
+        self as u8 as u32
     }
     fn from_bits(bits: u32) -> Option<Self> {
         use Interrupt::*;
@@ -178,14 +182,14 @@ impl Nr for Interrupt {
             63 => Some(GPIOHS29),
             64 => Some(GPIOHS30),
             65 => Some(GPIOHS31),
-            _ => panic!("invalid interrupt bits")
+            _ => panic!("invalid interrupt bits"),
         }
     }
 }
 
 #[doc(hidden)]
-pub trait Nr: Sized {
-    fn into_bits(&self) -> u32;
+pub trait Nr: Sized + Copy {
+    fn into_bits(self) -> u32;
     fn from_bits(bits: u32) -> Option<Self>;
 }
 
@@ -222,7 +226,7 @@ impl Priority {
             Priority::P6 => 6,
             Priority::P7 => 7,
         }
-    }     
+    }
     fn from_bits(prio: u32) -> Priority {
         match prio {
             0 => Priority::P0,

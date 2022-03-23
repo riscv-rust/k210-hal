@@ -9,14 +9,11 @@ pub struct Sha256 {
 }
 
 impl Sha256 {
-    pub fn sha256(sha256: SHA256, apb0: &mut APB0) -> Sha256 {
+    pub fn new(sha256: SHA256, apb0: &mut APB0) -> Sha256 {
         apb0.enable();
-        sysctl::clk_en_peri().modify(|_r, w| 
-            w.sha_clk_en().set_bit());
-        sysctl::peri_reset().modify(|_r, w| 
-            w.sha_reset().set_bit());
-        sysctl::peri_reset().modify(|_r, w| 
-            w.sha_reset().clear_bit());
+        sysctl::clk_en_peri().modify(|_r, w| w.sha_clk_en().set_bit());
+        sysctl::peri_reset().modify(|_r, w| w.sha_reset().set_bit());
+        sysctl::peri_reset().modify(|_r, w| w.sha_reset().clear_bit());
         Sha256 { sha256 }
     }
 
@@ -25,8 +22,7 @@ impl Sha256 {
     }
 
     pub fn release(self) -> SHA256 {
-        sysctl::clk_en_peri().modify(|_r, w| 
-            w.sha_clk_en().clear_bit());
+        sysctl::clk_en_peri().modify(|_r, w| w.sha_clk_en().clear_bit());
         self.sha256
     }
 }
@@ -47,6 +43,8 @@ impl Digest {
     }
 
     pub fn free(self) -> Sha256 {
-        Sha256 { sha256: self.sha256 }
+        Sha256 {
+            sha256: self.sha256,
+        }
     }
 }

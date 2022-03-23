@@ -1,12 +1,12 @@
-//! (TODO) Bypass cache 
-//! 
+//! (TODO) Bypass cache
+//!
 //! Todo: verify this module!
 
 use core::slice;
 use core::str;
 
 /// Convert a buffer or a pointer into ones with uncached address.
-/// 
+///
 /// Section 3.4.1, Kendryte K210 Datasheet
 pub fn uncached<T: Uncache>(buf: T) -> T {
     buf.uncache()
@@ -111,7 +111,7 @@ fn assert_addr_cached(addr: usize) {
         MEM0 memory: 0x8000_0000 to 0x803F_FFFF
         MEM1 memory: 0x8040_0000 to 0x805F_FFFF
     */
-    // assure that memory is within SRAM or AI 
+    // assure that memory is within SRAM or AI
     // todo: should we exclude AI?
-    assert!(addr <= 0x807F_FFFF && addr >= 0x8000_0000);
+    assert!((0x8000_0000..0x8080_0000).contains(&addr));
 }

@@ -10,11 +10,11 @@ pub fn dmac_version() -> u64 {
 }
 
 pub trait DmacExt {
-    fn configure(self, /* sysctl ACLK clock */) -> Dmac;
+    fn configure(self /* sysctl ACLK clock */) -> Dmac;
 }
 
 impl DmacExt for pac::DMAC {
-    fn configure(self, /* sysctl ACLK clock */) -> Dmac {
+    fn configure(self /* sysctl ACLK clock */) -> Dmac {
         // enable
         sysctl::clk_en_peri().modify(|_, w| w.dma_clk_en().set_bit());
         // todo: reset
@@ -22,13 +22,11 @@ impl DmacExt for pac::DMAC {
     }
 }
 
-pub struct Dmac {
-
-}
+pub struct Dmac {}
 
 // pub struct C0 {
 //     // todo
 //     pub async fn poll() {
-        
+
 //     }
 // }

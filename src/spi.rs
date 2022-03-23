@@ -1,24 +1,24 @@
 //! (TODO) Serial Peripheral Interface (SPI)
 
-use crate::pac::SPI0;
 use crate::clock::Clocks;
+use crate::pac::SPI0;
 use crate::sysctl::{self, APB0};
-pub use embedded_hal::spi::{Mode, Polarity, Phase};
 use core::convert::Infallible;
+pub use embedded_hal::spi::{Mode, Phase, Polarity};
 
-/// 
+///
 pub struct Spi<SPI> {
-    spi: SPI
+    spi: SPI,
 }
 
 impl Spi<SPI0> {
     pub fn spi0(
-        spi: SPI0, 
-        mode: Mode, 
-        frame_format: FrameFormat, 
-        endian: Endian, 
-        clock: &Clocks, 
-        apb0: &mut APB0
+        spi: SPI0,
+        mode: Mode,
+        frame_format: FrameFormat,
+        endian: Endian,
+        clock: &Clocks,
+        apb0: &mut APB0,
     ) -> Self {
         let work_mode = hal_mode_to_pac(mode);
         let frame_format = frame_format_to_pac(frame_format);
@@ -53,15 +53,13 @@ impl Spi<SPI0> {
         // enable APB0 bus
         apb0.enable();
         // enable peripheral via sysctl
-        sysctl::clk_en_peri().modify(|_r, w| 
-            w.spi0_clk_en().set_bit());
+        sysctl::clk_en_peri().modify(|_r, w| w.spi0_clk_en().set_bit());
         Spi { spi }
     }
 
     pub fn release(self) -> SPI0 {
         // power off
-        sysctl::clk_en_peri().modify(|_r, w| 
-            w.spi0_clk_en().clear_bit());
+        sysctl::clk_en_peri().modify(|_r, w| w.spi0_clk_en().clear_bit());
         self.spi
     }
 }
@@ -101,7 +99,7 @@ pub enum Endian {
 #[inline]
 fn hal_mode_to_pac(mode: Mode) -> crate::pac::spi0::ctrlr0::WORK_MODE_A {
     use crate::pac::spi0::ctrlr0::WORK_MODE_A;
-    use {Polarity::*, Phase::*};
+    use {Phase::*, Polarity::*};
     match (mode.polarity, mode.phase) {
         (IdleLow, CaptureOnFirstTransition) => WORK_MODE_A::MODE0,
         (IdleLow, CaptureOnSecondTransition) => WORK_MODE_A::MODE1,

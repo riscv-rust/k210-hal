@@ -6,13 +6,13 @@
 //! * [`UART2`](crate::pac::UART2)
 //! * [`UART3`](crate::pac::UART3)
 
-use core::mem;
 use core::convert::Infallible;
+use core::mem;
 
 use embedded_hal::serial;
 
-use crate::pac::{UARTHS,uart1,UART1,UART2,UART3};
 use crate::clock::Clocks;
+use crate::pac::{uart1, UART1, UART2, UART3, UARTHS};
 use crate::time::Bps;
 
 /// Extension trait that constrains UART peripherals
@@ -31,12 +31,11 @@ impl<UART> Serial<UART> {
     /// receiver half
     pub fn split(self) -> (Tx<UART>, Rx<UART>) {
         (
-            Tx {
-                uart: self.uart,
-            },
+            Tx { uart: self.uart },
             Rx {
-                uart: unsafe { mem::MaybeUninit::uninit().assume_init() },
-            }
+                // clippy allow: inner marker variable only indicates ownership, does not include actual data
+                uart: unsafe { #[allow(clippy::uninit_assumed_init)] mem::MaybeUninit::uninit().assume_init() },
+            },
         )
     }
 
@@ -65,8 +64,7 @@ pub struct Rx<UART> {
 }
 
 impl SerialExt for UARTHS {
-    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UARTHS>
-    {
+    fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UARTHS> {
         let uart = self;
 
         let div = clocks.cpu().0 / baud_rate.0 - 1;
@@ -147,9 +145,15 @@ mod closed_trait {
 }
 use closed_trait::UartX;
 
-impl UartX for UART1 { const INDEX: u8 = 1; }
-impl UartX for UART2 { const INDEX: u8 = 2; }
-impl UartX for UART3 { const INDEX: u8 = 3; }
+impl UartX for UART1 {
+    const INDEX: u8 = 1;
+}
+impl UartX for UART2 {
+    const INDEX: u8 = 2;
+}
+impl UartX for UART3 {
+    const INDEX: u8 = 3;
+}
 
 const UART_RECEIVE_FIFO_1: u32 = 0;
 const UART_SEND_FIFO_8: u32 = 3;
@@ -162,7 +166,7 @@ impl<UART: UartX> SerialExt for UART {
         let data_width = 8; // 8 data bits
         let stopbit_val = 0; // 1 stop bit
         let parity_val = 0; // No parity
-        // Note: need to make sure that UARTx clock is enabled through sysctl before here
+                            // Note: need to make sure that UARTx clock is enabled through sysctl before here
         let divisor = clocks.apb0().0 / baud_rate.0;
         let dlh = ((divisor >> 12) & 0xff) as u8;
         let dll = ((divisor >> 4) & 0xff) as u8;
@@ -174,11 +178,14 @@ impl<UART: UartX> SerialExt for UART {
             uart.rbr_dll_thr.write(|w| w.bits(dll.into()));
             uart.dlf.write(|w| w.bits(dlf.into()));
             // Clear Divisor Latch Access Bit after setting baudrate
-            uart.lcr.write(|w| w.bits((data_width - 5) | (stopbit_val << 2) | (parity_val << 3)));
+            uart.lcr
+                .write(|w| w.bits((data_width - 5) | (stopbit_val << 2) | (parity_val << 3)));
             // Write IER
             uart.dlh_ier.write(|w| w.bits(0x80)); /* THRE */
             // Write FCT
-            uart.fcr_iir.write(|w| w.bits(UART_RECEIVE_FIFO_1 << 6 | UART_SEND_FIFO_8 << 4 | 0x1 << 3 | 0x1));
+            uart.fcr_iir.write(|w| {
+                w.bits(UART_RECEIVE_FIFO_1 << 6 | UART_SEND_FIFO_8 << 4 | 0x1 << 3 | 0x1)
+            });
         }
 
         Serial { uart }
@@ -203,7 +210,8 @@ impl<UART: UartX> serial::Read<u8> for Rx<UART> {
     fn read(&mut self) -> nb::Result<u8, Infallible> {
         let lsr = self.uart.lsr.read();
 
-        if (lsr.bits() & (1<<0)) == 0 { // Data Ready bit
+        if (lsr.bits() & (1 << 0)) == 0 {
+            // Data Ready bit
             Err(nb::Error::WouldBlock)
         } else {
             let rbr = self.uart.rbr_dll_thr.read();
@@ -218,7 +226,8 @@ impl<UART: UartX> serial::Write<u8> for Tx<UART> {
     fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
         let lsr = self.uart.lsr.read();
 
-        if (lsr.bits() & (1<<5)) != 0 { // Transmit Holding Register Empty bit
+        if (lsr.bits() & (1 << 5)) != 0 {
+            // Transmit Holding Register Empty bit
             Err(nb::Error::WouldBlock)
         } else {
             unsafe {
