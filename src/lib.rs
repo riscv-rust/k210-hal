@@ -13,6 +13,7 @@ pub mod cache;
 pub mod clint;
 pub mod clock;
 pub mod dmac;
+pub mod dvp;
 pub mod fft;
 pub mod fpioa;
 pub mod gpio;
