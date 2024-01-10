@@ -1,11 +1,11 @@
 //! General Purpose Input/Output (GPIO)
 
-use crate::bit_utils::{u32_bit_is_clear, u32_bit_is_set, u32_set_bit, u32_toggle_bit};
+use crate::bit_utils::{u32_bit_is_clear, u32_bit_is_set, u32_set_bit};
 use crate::fpioa::{IoPin, Mode, Pull};
 use crate::pac;
 use crate::sysctl::{self, APB0};
 use core::marker::PhantomData;
-use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin, ToggleableOutputPin};
+use embedded_hal::digital::{ErrorType, InputPin, OutputPin, StatefulOutputPin};
 
 /// Extension trait to split a GPIO peripheral into independent pins
 pub trait GpioExt {
@@ -186,17 +186,20 @@ impl<GPIO: GpioIndex, PIN: IoPin, MODE: Active> Gpio<GPIO, PIN, MODE> {
     }
 }
 
-impl<GPIO: GpioIndex, PIN, MODE> InputPin for Gpio<GPIO, PIN, Input<MODE>> {
+impl<GPIO: GpioIndex, PIN, MODE> ErrorType for Gpio<GPIO, PIN, MODE> {
+    // All GPIO operations are infallible.
     type Error = core::convert::Infallible;
+}
 
-    fn is_high(&self) -> Result<bool, Self::Error> {
+impl<GPIO: GpioIndex, PIN, MODE> InputPin for Gpio<GPIO, PIN, Input<MODE>> {
+    fn is_high(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*pac::GPIO::ptr()).data_input as *const _ as *const _;
             u32_bit_is_set(p, GPIO::INDEX as usize)
         })
     }
 
-    fn is_low(&self) -> Result<bool, Self::Error> {
+    fn is_low(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*pac::GPIO::ptr()).data_input as *const _ as *const _;
             u32_bit_is_clear(p, GPIO::INDEX as usize)
@@ -205,8 +208,6 @@ impl<GPIO: GpioIndex, PIN, MODE> InputPin for Gpio<GPIO, PIN, Input<MODE>> {
 }
 
 impl<GPIO: GpioIndex, PIN> OutputPin for Gpio<GPIO, PIN, Output> {
-    type Error = core::convert::Infallible;
-
     fn set_high(&mut self) -> Result<(), Self::Error> {
         unsafe {
             let p = &(*pac::GPIO::ptr()).data_output as *const _ as *mut _;
@@ -225,29 +226,17 @@ impl<GPIO: GpioIndex, PIN> OutputPin for Gpio<GPIO, PIN, Output> {
 }
 
 impl<GPIO: GpioIndex, PIN> StatefulOutputPin for Gpio<GPIO, PIN, Output> {
-    fn is_set_high(&self) -> Result<bool, Self::Error> {
+    fn is_set_high(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*pac::GPIO::ptr()).data_output as *const _ as *const _;
             u32_bit_is_set(p, GPIO::INDEX as usize)
         })
     }
 
-    fn is_set_low(&self) -> Result<bool, Self::Error> {
+    fn is_set_low(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*pac::GPIO::ptr()).data_output as *const _ as *const _;
             u32_bit_is_clear(p, GPIO::INDEX as usize)
         })
-    }
-}
-
-impl<GPIO: GpioIndex, PIN> ToggleableOutputPin for Gpio<GPIO, PIN, Output> {
-    type Error = core::convert::Infallible;
-
-    fn toggle(&mut self) -> Result<(), Self::Error> {
-        unsafe {
-            let p = &(*pac::GPIO::ptr()).data_output as *const _ as *mut _;
-            u32_toggle_bit(p, GPIO::INDEX as usize);
-        }
-        Ok(())
     }
 }

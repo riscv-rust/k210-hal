@@ -1,9 +1,9 @@
 //! High-speed GPIO peripheral (GPIOHS)
 
-use crate::bit_utils::{u32_bit_is_clear, u32_bit_is_set, u32_set_bit, u32_toggle_bit};
+use crate::bit_utils::{u32_bit_is_clear, u32_bit_is_set, u32_set_bit};
 use crate::pac::GPIOHS;
 use core::marker::PhantomData;
-use embedded_hal::digital::v2::{InputPin, OutputPin};
+use embedded_hal::digital::{ErrorType, InputPin, OutputPin};
 
 // todo: verify
 
@@ -114,17 +114,20 @@ impl<MODE> Gpiohs0<MODE> {
     }
 }
 
-impl<MODE> InputPin for Gpiohs0<Input<MODE>> {
+impl<MODE> ErrorType for Gpiohs0<MODE> {
+    // All GPIO operations are infallible.
     type Error = core::convert::Infallible;
+}
 
-    fn is_high(&self) -> Result<bool, Self::Error> {
+impl<MODE> InputPin for Gpiohs0<Input<MODE>> {
+    fn is_high(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*GPIOHS::ptr()).input_val as *const _ as *const _;
             u32_bit_is_set(p, 0)
         })
     }
 
-    fn is_low(&self) -> Result<bool, Self::Error> {
+    fn is_low(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*GPIOHS::ptr()).input_val as *const _ as *const _;
             u32_bit_is_clear(p, 0)
@@ -133,8 +136,6 @@ impl<MODE> InputPin for Gpiohs0<Input<MODE>> {
 }
 
 impl<MODE> OutputPin for Gpiohs0<Output<MODE>> {
-    type Error = core::convert::Infallible;
-
     fn set_high(&mut self) -> Result<(), Self::Error> {
         unsafe {
             let p = &(*GPIOHS::ptr()).output_val as *const _ as *mut _;
@@ -208,13 +209,6 @@ trait GpiohsAccess {
         unsafe {
             let p = &mut Self::peripheral().output_xor as *mut _ as *mut _;
             u32_set_bit(p, bit, index);
-        }
-    }
-
-    fn toggle_pin(index: usize) {
-        unsafe {
-            let p = &mut Self::peripheral().output_val as *mut _ as *mut _;
-            u32_toggle_bit(p, index);
         }
     }
 

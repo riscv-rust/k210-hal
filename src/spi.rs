@@ -3,7 +3,6 @@
 use crate::clock::Clocks;
 use crate::pac::SPI0;
 use crate::sysctl::{self, APB0};
-use core::convert::Infallible;
 pub use embedded_hal::spi::{Mode, Phase, Polarity};
 
 ///
@@ -64,21 +63,33 @@ impl Spi<SPI0> {
     }
 }
 
-impl embedded_hal::spi::FullDuplex<u8> for Spi<SPI0> {
-    /// An enumeration of SPI errors
-    type Error = Infallible;
+impl embedded_hal::spi::ErrorType for Spi<SPI0> {
+    type Error = core::convert::Infallible;
+}
 
+impl embedded_hal::spi::SpiBus<u8> for Spi<SPI0> {
     /// Reads the word stored in the shift register
     ///
     /// **NOTE** A word must be sent to the slave before attempting to call this
     /// method.
-    fn read(&mut self) -> nb::Result<u8, Self::Error> {
+    fn read(&mut self, _words: &mut [u8]) -> Result<(), Self::Error> {
         todo!()
     }
 
-    /// Sends a word to the slave
-    fn send(&mut self, word: u8) -> nb::Result<(), Self::Error> {
-        todo!("{}", word)
+    fn write(&mut self, _words: &[u8]) -> Result<(), Self::Error> {
+        todo!()
+    }
+
+    fn transfer(&mut self, _read: &mut [u8], _write: &[u8]) -> Result<(), Self::Error> {
+        todo!()
+    }
+
+    fn transfer_in_place(&mut self, _words: &mut [u8]) -> Result<(), Self::Error> {
+        todo!()
+    }
+
+    fn flush(&mut self) -> Result<(), Self::Error> {
+        todo!()
     }
 }
 

@@ -35,7 +35,6 @@ pub mod prelude {
     pub use crate::stdout::Write as _k210_hal_stdout_Write;
     pub use crate::sysctl::SysctlExt as _k210_hal_sysctl_SysctlExt;
     pub use crate::time::U32Ext as _k210_hal_time_U32Ext;
-    pub use embedded_hal::prelude::*;
 }
 
 mod bit_utils {
@@ -47,12 +46,6 @@ mod bit_utils {
         } else {
             *p &= !mask;
         }
-    }
-
-    #[inline(always)]
-    pub(crate) unsafe fn u32_toggle_bit(p: *mut u32, index: usize) {
-        let mask = 1 << index;
-        *p ^= mask;
     }
 
     #[inline(always)]

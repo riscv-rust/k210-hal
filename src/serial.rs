@@ -9,8 +9,6 @@
 use core::convert::Infallible;
 use core::mem;
 
-use embedded_hal::serial;
-
 use crate::clock::Clocks;
 use crate::pac::{uart1, UART1, UART2, UART3, UARTHS};
 use crate::time::Bps;
@@ -98,44 +96,48 @@ impl Serial<UARTHS> {
     }
 }
 
-impl serial::Read<u8> for Rx<UARTHS> {
-    type Error = Infallible;
+impl embedded_io::ErrorType for Rx<UARTHS> {
+    type Error = core::convert::Infallible;
+}
 
-    fn read(&mut self) -> nb::Result<u8, Infallible> {
-        let rxdata = self.uart.rxdata.read();
-
-        if rxdata.empty().bit_is_set() {
-            Err(nb::Error::WouldBlock)
-        } else {
-            Ok(rxdata.data().bits() as u8)
+impl embedded_io::Read for Rx<UARTHS> {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, Infallible> {
+        while self.uart.rxdata.read().empty().bit_is_set() {
+            // Block until rxdata available.
+            core::hint::spin_loop()
         }
+        let len = buf.len();
+        for slot in buf {
+            *slot = self.uart.rxdata.read().data().bits();
+        }
+        Ok(len)
     }
 }
 
-impl serial::Write<u8> for Tx<UARTHS> {
-    type Error = Infallible;
+impl embedded_io::ErrorType for Tx<UARTHS> {
+    type Error = core::convert::Infallible;
+}
 
-    fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
-        let txdata = self.uart.txdata.read();
-
-        if txdata.full().bit_is_set() {
-            Err(nb::Error::WouldBlock)
-        } else {
-            unsafe {
-                (*UARTHS::ptr()).txdata.write(|w| w.data().bits(byte));
-            }
-            Ok(())
+impl embedded_io::Write for Tx<UARTHS> {
+    fn write(&mut self, bytes: &[u8]) -> Result<usize, Infallible> {
+        while self.uart.txdata.read().full().bit_is_set() {
+            // Block until txdata available.
+            core::hint::spin_loop()
         }
+        for byte in bytes {
+            unsafe {
+                self.uart.txdata.write(|w| w.data().bits(*byte));
+            }
+        }
+        Ok(bytes.len())
     }
 
-    fn flush(&mut self) -> nb::Result<(), Infallible> {
-        let txdata = self.uart.txdata.read();
-
-        if txdata.full().bit_is_set() {
-            Err(nb::Error::WouldBlock)
-        } else {
-            Ok(())
+    fn flush(&mut self) -> Result<(), Infallible> {
+        while self.uart.txdata.read().full().bit_is_set() {
+            // Block until flush complete. If you don't want a block, use embedded_io_async traits instead.
+            core::hint::spin_loop()
         }
+        Ok(())
     }
 }
 
@@ -207,40 +209,43 @@ impl<UART: UartX> Serial<UART> {
     }
 }
 
-impl<UART: UartX> serial::Read<u8> for Rx<UART> {
-    type Error = Infallible;
+impl<UART: UartX> embedded_io::ErrorType for Rx<UART> {
+    type Error = core::convert::Infallible;
+}
 
-    fn read(&mut self) -> nb::Result<u8, Infallible> {
-        let lsr = self.uart.lsr.read();
-
-        if (lsr.bits() & (1 << 0)) == 0 {
+impl<UART: UartX> embedded_io::Read for Rx<UART> {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize, Infallible> {
+        while (self.uart.lsr.read().bits() & (1 << 0)) == 0 {
             // Data Ready bit
-            Err(nb::Error::WouldBlock)
-        } else {
-            let rbr = self.uart.rbr_dll_thr.read();
-            Ok((rbr.bits() & 0xff) as u8)
+            core::hint::spin_loop()
         }
+        let len = buf.len();
+        for slot in buf {
+            *slot = (self.uart.rbr_dll_thr.read().bits() & 0xff) as u8;
+        }
+        Ok(len)
     }
 }
 
-impl<UART: UartX> serial::Write<u8> for Tx<UART> {
-    type Error = Infallible;
+impl<UART: UartX> embedded_io::ErrorType for Tx<UART> {
+    type Error = core::convert::Infallible;
+}
 
-    fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
-        let lsr = self.uart.lsr.read();
-
-        if (lsr.bits() & (1 << 5)) != 0 {
+impl<UART: UartX> embedded_io::Write for Tx<UART> {
+    fn write(&mut self, bytes: &[u8]) -> Result<usize, Infallible> {
+        while (self.uart.lsr.read().bits() & (1 << 5)) != 0 {
             // Transmit Holding Register Empty bit
-            Err(nb::Error::WouldBlock)
-        } else {
-            unsafe {
-                self.uart.rbr_dll_thr.write(|w| w.bits(byte.into()));
-            }
-            Ok(())
+            core::hint::spin_loop();
         }
+        for byte in bytes {
+            unsafe {
+                self.uart.rbr_dll_thr.write(|w| w.bits(*byte as u32));
+            }
+        }
+        Ok(bytes.len())
     }
 
-    fn flush(&mut self) -> nb::Result<(), Infallible> {
+    fn flush(&mut self) -> Result<(), Infallible> {
         // TODO
         Ok(())
     }
