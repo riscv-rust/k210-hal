@@ -40,6 +40,7 @@ pub struct Gpiohs0<MODE> {
 }
 
 impl<MODE> Gpiohs0<MODE> {
+    #[inline]
     pub fn into_pull_up_input(self) -> Gpiohs0<Input<PullUp>> {
         GPIOHS::set_output_en(0, false);
         GPIOHS::set_input_en(0, true);
@@ -60,6 +61,7 @@ bitflags::bitflags! {
 }
 
 impl<MODE> Gpiohs0<MODE> {
+    #[inline]
     pub fn trigger_on_edge(&mut self, edge: Edge) {
         // clear all pending bits
         GPIOHS::clear_rise_ip(0);
@@ -73,6 +75,7 @@ impl<MODE> Gpiohs0<MODE> {
         GPIOHS::set_low_ie(0, edge.contains(Edge::LOW));
     }
 
+    #[inline]
     pub fn check_edges(&self) -> Edge {
         let mut ans = Edge::empty();
         if GPIOHS::has_rise_ip(0) {
@@ -90,6 +93,7 @@ impl<MODE> Gpiohs0<MODE> {
         ans
     }
 
+    #[inline]
     pub fn clear_interrupt_pending_bits(&mut self) {
         if GPIOHS::has_rise_ie(0) {
             GPIOHS::set_rise_ie(0, false);
@@ -120,6 +124,7 @@ impl<MODE> ErrorType for Gpiohs0<MODE> {
 }
 
 impl<MODE> InputPin for Gpiohs0<Input<MODE>> {
+    #[inline]
     fn is_high(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*GPIOHS::ptr()).input_val as *const _ as *const _;
@@ -127,6 +132,7 @@ impl<MODE> InputPin for Gpiohs0<Input<MODE>> {
         })
     }
 
+    #[inline]
     fn is_low(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*GPIOHS::ptr()).input_val as *const _ as *const _;
@@ -136,6 +142,7 @@ impl<MODE> InputPin for Gpiohs0<Input<MODE>> {
 }
 
 impl<MODE> OutputPin for Gpiohs0<Output<MODE>> {
+    #[inline]
     fn set_high(&mut self) -> Result<(), Self::Error> {
         unsafe {
             let p = &(*GPIOHS::ptr()).output_val as *const _ as *mut _;
@@ -144,6 +151,7 @@ impl<MODE> OutputPin for Gpiohs0<Output<MODE>> {
         Ok(())
     }
 
+    #[inline]
     fn set_low(&mut self) -> Result<(), Self::Error> {
         unsafe {
             let p = &(*GPIOHS::ptr()).output_val as *const _ as *mut _;
@@ -156,6 +164,7 @@ impl<MODE> OutputPin for Gpiohs0<Output<MODE>> {
 trait GpiohsAccess {
     fn peripheral() -> &'static mut crate::pac::gpiohs::RegisterBlock;
 
+    #[inline]
     fn set_drive(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().drive as *mut _ as *mut _;
@@ -163,6 +172,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn input_value(index: usize) -> bool {
         unsafe {
             let p = &mut Self::peripheral().input_val as *mut _ as *mut _;
@@ -170,6 +180,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn set_input_en(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().input_en as *mut _ as *mut _;
@@ -177,6 +188,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn set_iof_en(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().iof_en as *mut _ as *mut _;
@@ -184,6 +196,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn set_iof_sel(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().iof_sel as *mut _ as *mut _;
@@ -191,6 +204,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn set_output_en(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().output_en as *mut _ as *mut _;
@@ -198,6 +212,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn set_output_value(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().output_val as *mut _ as *mut _;
@@ -205,6 +220,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn set_output_xor(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().output_xor as *mut _ as *mut _;
@@ -212,6 +228,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn set_pullup_en(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().pullup_en as *mut _ as *mut _;
@@ -219,6 +236,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn set_rise_ie(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().rise_ie as *mut _ as *mut _;
@@ -226,6 +244,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn clear_rise_ip(index: usize) {
         unsafe {
             let p = &mut Self::peripheral().rise_ip as *mut _ as *mut _;
@@ -233,6 +252,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn set_fall_ie(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().fall_ie as *mut _ as *mut _;
@@ -240,6 +260,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn clear_fall_ip(index: usize) {
         unsafe {
             let p = &mut Self::peripheral().fall_ip as *mut _ as *mut _;
@@ -247,6 +268,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn set_high_ie(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().high_ie as *mut _ as *mut _;
@@ -254,6 +276,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn clear_high_ip(index: usize) {
         unsafe {
             let p = &mut Self::peripheral().high_ip as *mut _ as *mut _;
@@ -261,6 +284,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn set_low_ie(index: usize, bit: bool) {
         unsafe {
             let p = &mut Self::peripheral().low_ie as *mut _ as *mut _;
@@ -268,6 +292,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn clear_low_ip(index: usize) {
         unsafe {
             let p = &mut Self::peripheral().low_ip as *mut _ as *mut _;
@@ -275,6 +300,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn has_rise_ie(index: usize) -> bool {
         unsafe {
             let p = &mut Self::peripheral().rise_ie as *mut _ as *mut _;
@@ -282,6 +308,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn has_fall_ie(index: usize) -> bool {
         unsafe {
             let p = &mut Self::peripheral().fall_ie as *mut _ as *mut _;
@@ -289,6 +316,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn has_high_ie(index: usize) -> bool {
         unsafe {
             let p = &mut Self::peripheral().high_ie as *mut _ as *mut _;
@@ -296,6 +324,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn has_low_ie(index: usize) -> bool {
         unsafe {
             let p = &mut Self::peripheral().low_ie as *mut _ as *mut _;
@@ -303,6 +332,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn has_rise_ip(index: usize) -> bool {
         unsafe {
             let p = &mut Self::peripheral().rise_ip as *mut _ as *mut _;
@@ -310,6 +340,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn has_fall_ip(index: usize) -> bool {
         unsafe {
             let p = &mut Self::peripheral().fall_ip as *mut _ as *mut _;
@@ -317,6 +348,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn has_high_ip(index: usize) -> bool {
         unsafe {
             let p = &mut Self::peripheral().high_ip as *mut _ as *mut _;
@@ -324,6 +356,7 @@ trait GpiohsAccess {
         }
     }
 
+    #[inline]
     fn has_low_ip(index: usize) -> bool {
         unsafe {
             let p = &mut Self::peripheral().low_ip as *mut _ as *mut _;
@@ -333,6 +366,7 @@ trait GpiohsAccess {
 }
 
 impl GpiohsAccess for GPIOHS {
+    #[inline]
     fn peripheral() -> &'static mut crate::pac::gpiohs::RegisterBlock {
         unsafe { &mut *(GPIOHS::ptr() as *mut _) }
     }

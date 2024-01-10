@@ -27,6 +27,7 @@ pub struct Serial<UART> {
 impl<UART> Serial<UART> {
     /// Splits the `Serial` abstraction into a transmitter and a
     /// receiver half
+    #[inline]
     pub fn split(self) -> (Tx<UART>, Rx<UART>) {
         (
             Tx { uart: self.uart },
@@ -42,12 +43,14 @@ impl<UART> Serial<UART> {
 
     /// Forms `Serial` abstraction from a transmitter and a
     /// receiver half
+    #[inline]
     pub fn join(tx: Tx<UART>, rx: Rx<UART>) -> Self {
         let _ = rx; // note(discard): Zero-sized typestate struct
         Serial { uart: tx.uart }
     }
 
     /// Releases the UART peripheral
+    #[inline]
     pub fn free(self) -> UART {
         // todo: power down this UART
         self.uart
@@ -65,6 +68,7 @@ pub struct Rx<UART> {
 }
 
 impl SerialExt for UARTHS {
+    #[inline]
     fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UARTHS> {
         let uart = self;
 
@@ -82,12 +86,14 @@ impl SerialExt for UARTHS {
 
 impl Serial<UARTHS> {
     /// Starts listening for an interrupt event
+    #[inline]
     pub fn listen(self) -> Self {
         self.uart.ie.write(|w| w.txwm().bit(false).rxwm().bit(true));
         self
     }
 
     /// Stops listening for an interrupt event
+    #[inline]
     pub fn unlisten(self) -> Self {
         self.uart
             .ie
@@ -101,6 +107,7 @@ impl embedded_io::ErrorType for Rx<UARTHS> {
 }
 
 impl embedded_io::Read for Rx<UARTHS> {
+    #[inline]
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Infallible> {
         while self.uart.rxdata.read().empty().bit_is_set() {
             // Block until rxdata available.
@@ -119,6 +126,7 @@ impl embedded_io::ErrorType for Tx<UARTHS> {
 }
 
 impl embedded_io::Write for Tx<UARTHS> {
+    #[inline]
     fn write(&mut self, bytes: &[u8]) -> Result<usize, Infallible> {
         while self.uart.txdata.read().full().bit_is_set() {
             // Block until txdata available.
@@ -132,6 +140,7 @@ impl embedded_io::Write for Tx<UARTHS> {
         Ok(bytes.len())
     }
 
+    #[inline]
     fn flush(&mut self) -> Result<(), Infallible> {
         while self.uart.txdata.read().full().bit_is_set() {
             // Block until flush complete. If you don't want a block, use embedded_io_async traits instead.
@@ -164,6 +173,7 @@ const UART_RECEIVE_FIFO_1: u32 = 0;
 const UART_SEND_FIFO_8: u32 = 3;
 
 impl<UART: UartX> SerialExt for UART {
+    #[inline]
     fn configure(self, baud_rate: Bps, clocks: &Clocks) -> Serial<UART> {
         let uart = self;
 
@@ -199,12 +209,16 @@ impl<UART: UartX> SerialExt for UART {
 
 impl<UART: UartX> Serial<UART> {
     /// Starts listening for an interrupt event
+    #[inline]
     pub fn listen(self) -> Self {
+        // TODO
         self
     }
 
     /// Stops listening for an interrupt event
+    #[inline]
     pub fn unlisten(self) -> Self {
+        // TODO
         self
     }
 }
@@ -214,6 +228,7 @@ impl<UART: UartX> embedded_io::ErrorType for Rx<UART> {
 }
 
 impl<UART: UartX> embedded_io::Read for Rx<UART> {
+    #[inline]
     fn read(&mut self, buf: &mut [u8]) -> Result<usize, Infallible> {
         while (self.uart.lsr.read().bits() & (1 << 0)) == 0 {
             // Data Ready bit
@@ -232,6 +247,7 @@ impl<UART: UartX> embedded_io::ErrorType for Tx<UART> {
 }
 
 impl<UART: UartX> embedded_io::Write for Tx<UART> {
+    #[inline]
     fn write(&mut self, bytes: &[u8]) -> Result<usize, Infallible> {
         while (self.uart.lsr.read().bits() & (1 << 5)) != 0 {
             // Transmit Holding Register Empty bit
@@ -245,6 +261,7 @@ impl<UART: UartX> embedded_io::Write for Tx<UART> {
         Ok(bytes.len())
     }
 
+    #[inline]
     fn flush(&mut self) -> Result<(), Infallible> {
         // TODO
         Ok(())

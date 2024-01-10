@@ -102,7 +102,7 @@ $(
         /// [functions]: ../functions/index.html
         pub fn into_function<F: Function>(self, func: F) -> $IoX<F> {
             let _ = func; // note(discard): Zero-sized typestate value
-            unsafe { &(*FPIOA::ptr()).io[$id].write(|w|
+            unsafe { (*FPIOA::ptr()).io[$id].write(|w|
                 w.bits(FUNCTION_DEFAULTS[F::INDEX as usize])
             ) };
             $IoX { _function: PhantomData }

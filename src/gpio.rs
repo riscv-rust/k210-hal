@@ -17,6 +17,7 @@ macro_rules! def_gpio_pins {
     ($($GPIOX: ident: ($num: expr, $gpiox: ident, $func: ident);)+) => {
 
 impl GpioExt for pac::GPIO {
+    #[inline]
     fn split(self, apb0: &mut APB0) -> Parts {
         // enable APB0 bus
         apb0.enable();
@@ -113,6 +114,7 @@ pub struct Gpio<GPIO, PIN, MODE> {
 }
 
 impl<GPIO: GpioIndex, PIN: Mode<GPIO::FUNC>> Gpio<GPIO, PIN, Unknown> {
+    #[inline]
     pub fn new(gpio: GPIO, pin: PIN) -> Gpio<GPIO, PIN, Unknown> {
         Gpio {
             gpio,
@@ -123,12 +125,14 @@ impl<GPIO: GpioIndex, PIN: Mode<GPIO::FUNC>> Gpio<GPIO, PIN, Unknown> {
 }
 
 impl<GPIO, PIN, MODE> Gpio<GPIO, PIN, MODE> {
+    #[inline]
     pub fn free(self) -> (GPIO, PIN) {
         (self.gpio, self.pin)
     }
 }
 
 impl<GPIO: GpioIndex, PIN: IoPin, MODE: Active> Gpio<GPIO, PIN, MODE> {
+    #[inline]
     pub fn into_floating_input(mut self) -> Gpio<GPIO, PIN, Input<Floating>> {
         self.pin.set_io_pull(Pull::None);
         self.direction_in();
@@ -139,6 +143,7 @@ impl<GPIO: GpioIndex, PIN: IoPin, MODE: Active> Gpio<GPIO, PIN, MODE> {
         }
     }
 
+    #[inline]
     pub fn into_pull_up_input(mut self) -> Gpio<GPIO, PIN, Input<PullUp>> {
         self.pin.set_io_pull(Pull::Up);
         self.direction_in();
@@ -149,6 +154,7 @@ impl<GPIO: GpioIndex, PIN: IoPin, MODE: Active> Gpio<GPIO, PIN, MODE> {
         }
     }
 
+    #[inline]
     pub fn into_pull_down_input(mut self) -> Gpio<GPIO, PIN, Input<PullDown>> {
         self.pin.set_io_pull(Pull::Down);
         self.direction_in();
@@ -159,6 +165,7 @@ impl<GPIO: GpioIndex, PIN: IoPin, MODE: Active> Gpio<GPIO, PIN, MODE> {
         }
     }
 
+    #[inline]
     pub fn into_push_pull_output(mut self) -> Gpio<GPIO, PIN, Output> {
         self.pin.set_io_pull(Pull::Down);
         self.direction_out();
@@ -192,6 +199,7 @@ impl<GPIO: GpioIndex, PIN, MODE> ErrorType for Gpio<GPIO, PIN, MODE> {
 }
 
 impl<GPIO: GpioIndex, PIN, MODE> InputPin for Gpio<GPIO, PIN, Input<MODE>> {
+    #[inline]
     fn is_high(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*pac::GPIO::ptr()).data_input as *const _ as *const _;
@@ -199,6 +207,7 @@ impl<GPIO: GpioIndex, PIN, MODE> InputPin for Gpio<GPIO, PIN, Input<MODE>> {
         })
     }
 
+    #[inline]
     fn is_low(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*pac::GPIO::ptr()).data_input as *const _ as *const _;
@@ -208,6 +217,7 @@ impl<GPIO: GpioIndex, PIN, MODE> InputPin for Gpio<GPIO, PIN, Input<MODE>> {
 }
 
 impl<GPIO: GpioIndex, PIN> OutputPin for Gpio<GPIO, PIN, Output> {
+    #[inline]
     fn set_high(&mut self) -> Result<(), Self::Error> {
         unsafe {
             let p = &(*pac::GPIO::ptr()).data_output as *const _ as *mut _;
@@ -216,6 +226,7 @@ impl<GPIO: GpioIndex, PIN> OutputPin for Gpio<GPIO, PIN, Output> {
         Ok(())
     }
 
+    #[inline]
     fn set_low(&mut self) -> Result<(), Self::Error> {
         unsafe {
             let p = &(*pac::GPIO::ptr()).data_output as *const _ as *mut _;
@@ -226,6 +237,7 @@ impl<GPIO: GpioIndex, PIN> OutputPin for Gpio<GPIO, PIN, Output> {
 }
 
 impl<GPIO: GpioIndex, PIN> StatefulOutputPin for Gpio<GPIO, PIN, Output> {
+    #[inline]
     fn is_set_high(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*pac::GPIO::ptr()).data_output as *const _ as *const _;
@@ -233,6 +245,7 @@ impl<GPIO: GpioIndex, PIN> StatefulOutputPin for Gpio<GPIO, PIN, Output> {
         })
     }
 
+    #[inline]
     fn is_set_low(&mut self) -> Result<bool, Self::Error> {
         Ok(unsafe {
             let p = &(*pac::GPIO::ptr()).data_output as *const _ as *const _;

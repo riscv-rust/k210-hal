@@ -11,6 +11,7 @@ pub struct Spi<SPI> {
 }
 
 impl Spi<SPI0> {
+    #[inline]
     pub fn spi0(
         spi: SPI0,
         mode: Mode,
@@ -56,6 +57,7 @@ impl Spi<SPI0> {
         Spi { spi }
     }
 
+    #[inline]
     pub fn release(self) -> SPI0 {
         // power off
         sysctl::clk_en_peri().modify(|_r, w| w.spi0_clk_en().clear_bit());
