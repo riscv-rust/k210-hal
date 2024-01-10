@@ -21,7 +21,6 @@ pub mod plic;
 pub mod serial;
 pub mod sha256;
 pub mod spi;
-pub mod stdout;
 pub mod sysctl;
 pub mod time;
 
@@ -32,7 +31,6 @@ pub mod prelude {
     pub use crate::gpiohs::GpiohsExt as _k210_hal_gpiohs_GpiohsExt;
     pub use crate::plic::PlicExt as _k210_hal_plic_PlicExt;
     pub use crate::serial::SerialExt as _k210_hal_serial_SerialExt;
-    pub use crate::stdout::Write as _k210_hal_stdout_Write;
     pub use crate::sysctl::SysctlExt as _k210_hal_sysctl_SysctlExt;
     pub use crate::time::U32Ext as _k210_hal_time_U32Ext;
 }
