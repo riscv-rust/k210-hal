@@ -15,6 +15,5 @@ targets = ["riscv64gc-unknown-none-elf"]
 [dependencies]
 embedded-hal = "1.0.0"
 embedded-io = "0.6.1"
-nb = "1"
 k210-pac = "0.2.0"
 bitflags = "1.3"
